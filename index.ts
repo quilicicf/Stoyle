@@ -1,3 +1,5 @@
+const RESET_CODE = '\x1b[0m';
+
 export enum ForegroundCode {
   Black = 30,
   Red = 31,
@@ -123,8 +125,14 @@ export class Styler {
     return `\x1b[${codes.join(';')}m`;
   }
 
-  color (string: string, isNoColorMode: ColorMode) {
-    return isNoColorMode === ColorMode.NO_COLOR ? string : `${this.colorCode}${string}`;
+  color (string: string, colorMode: ColorMode) {
+    return colorMode === ColorMode.NO_COLOR ? string : `${this.colorCode}${string}`;
+  }
+
+  colorOnce (string: string, colorMode: ColorMode) {
+    return colorMode === ColorMode.NO_COLOR
+      ? string
+      : `${this.colorCode}${string}${RESET_CODE}`;
   }
 }
 
@@ -136,8 +144,6 @@ export interface ColorCommand {
 function isStyler (object: any): object is Styler {
   return object.color !== undefined;
 }
-
-const RESET_CODE = '\x1b[0m';
 
 export function compose (fullStyle: Style): Styler {
   return new Styler(fullStyle);
