@@ -129,7 +129,7 @@ export class Styler {
     return colorMode === ColorMode.NO_COLOR ? string : `${this.colorCode}${string}`;
   }
 
-  colorOnce (string: string, colorMode: ColorMode) {
+  colorOnce (string: string, colorMode: ColorMode = ColorMode.COLOR) {
     return colorMode === ColorMode.NO_COLOR
       ? string
       : `${this.colorCode}${string}${RESET_CODE}`;
