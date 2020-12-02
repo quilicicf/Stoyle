@@ -44,3 +44,9 @@ Deno.test('should wrap text without colors in no-color-mode', () => {
   );
   assertEquals(output, 'test 1, 2 1, 2');
 });
+
+Deno.test('should color once', () => {
+  const cyan = compose({ foreground: ForegroundCode.Cyan });
+  const output = cyan.colorOnce('Toto');
+  assertEquals(output, '\x1b[36mToto\x1b[0m');
+});
