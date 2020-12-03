@@ -50,3 +50,12 @@ Deno.test('should color once', () => {
   const output = cyan.colorOnce('Toto');
   assertEquals(output, '\x1b[36mToto\x1b[0m');
 });
+
+Deno.test('should use as few color codes as possible', () => {
+  const cyan = compose({ foreground: ForegroundCode.Cyan });
+  const output = wrap([
+    { string: 'Toto', style: cyan },
+    { string: '\n' }
+  ]);
+  assertEquals(output, '\x1b[36mToto\x1b[0m\n');
+});

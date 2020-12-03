@@ -152,14 +152,26 @@ export function compose (fullStyle: Style): Styler {
 export function wrap (fragments: ColorCommand[], colorMode: ColorMode = ColorMode.COLOR) {
   if (fragments.length === 0) { return ''; }
 
-  const resetCodeIfColorMode = colorMode === ColorMode.NO_COLOR ? '' : RESET_CODE;
-  return fragments
-    .map(({ string, style }) => {
-      if (!style) { return `${resetCodeIfColorMode}${string}`; }
+  const isColorMode = colorMode === ColorMode.COLOR;
+  const { result, isDefaultStyle } = fragments
+    .reduce((seed, { string, style }: ColorCommand): { isDefaultStyle: boolean, result: string } => {
+        if (!style) {
+          return isColorMode && !seed.isDefaultStyle
+            ? { isDefaultStyle: true, result: seed.result + `${RESET_CODE}${string}` }
+            : { ...seed, result: seed.result + string };
+        }
 
-      return isStyler(style)
-        ? style.color(string, colorMode)
-        : new Styler(style).color(string, colorMode);
-    })
-    .join('') + resetCodeIfColorMode;
+        const styler: Styler = isStyler(style) ? style : new Styler(style);
+        return {
+          isDefaultStyle: styler.colorCode === RESET_CODE,
+          result: seed.result + styler.color.bind(styler)(string, colorMode)
+        };
+      },
+      {
+        isDefaultStyle: true,
+        result: ''
+      }
+    );
+
+  return result + (isColorMode && !isDefaultStyle ? RESET_CODE : '');
 }
