@@ -122,20 +122,26 @@ export function applyStyle (styles: (string | null)[], styleMode: StyleMode, str
     throw Error(`There are ${styles.length} styles but ${values.length} values!`);
   }
 
+  if (styleMode === StyleMode.NO_STYLE) {
+    return strings.reduce(
+      (seed, string, i) => {
+        seed += string;
+        seed += values[ i ] || '';
+        return seed;
+      },
+      '',
+    );
+  }
+
   const { value, currentStyle: lastStyle } = strings.reduce(
     (seed: { value: string, currentStyle: string }, string, i) => {
-      const isStyleMode = styleMode === StyleMode.STYLE;
-      const shouldResetStyleForString = isStyleMode
-        && string
-        && seed.currentStyle !== RESET_CODE;
+      const shouldResetStyleForString = string && seed.currentStyle !== RESET_CODE;
       const stringStyle = shouldResetStyleForString ? RESET_CODE : '';
 
       const value = values[ i ] || '';
       const style = styles[ i ] || RESET_CODE;
       const transitionalStyle = stringStyle || seed.currentStyle;
-      const shouldStyleValue = isStyleMode
-        && value
-        && transitionalStyle !== style;
+      const shouldStyleValue = value && transitionalStyle !== style;
       const valueStyle = shouldStyleValue ? style : '';
 
       seed.value += stringStyle;

@@ -1,4 +1,4 @@
-import { assertEquals } from 'https://deno.land/std/testing/asserts.ts';
+import { assertEquals, fail } from 'https://deno.land/std/testing/asserts.ts';
 
 import {
   BackgroundCode, BackgroundRgbCode,
@@ -57,11 +57,39 @@ Deno.test('should not style in no color mode', () => {
 
 Deno.test('should not style empty value', () => {
   function color (strings: TemplateStringsArray, ...values: string[]) {
-    return applyStyle([ cyan ], StyleMode.NO_STYLE, strings, ...values);
+    return applyStyle([ cyan ], StyleMode.STYLE, strings, ...values);
   }
 
   const output = color`I am ${empty}!`;
   assertEquals(output, `I am ${empty}!`);
+});
+
+Deno.test('should support nesting template literals', () => {
+  function color (strings: TemplateStringsArray, ...values: string[]) {
+    return applyStyle([ cyan ], StyleMode.STYLE, strings, ...values);
+  }
+
+  assertEquals(color`I am ${`<${p}>`}!`, `I am ${cyan}${`<${p}>`}${RESET_CODE}!`);
+});
+
+Deno.test('should fail if parameters and styles lengths are not equal', () => {
+  function cyanCyan (strings: TemplateStringsArray, ...values: string[]) {
+    return applyStyle([ cyan, cyan ], StyleMode.STYLE, strings, ...values);
+  }
+
+  try {
+    cyanCyan`${p}`;
+    fail('Should have failed, too few values');
+  } catch (error) {
+    assertEquals(error.message, 'There are 2 styles but 1 values!');
+  }
+
+  try {
+    cyanCyan`${p}${p}${p}`;
+    fail('Should have failed, too many values');
+  } catch (error) {
+    assertEquals(error.message, 'There are 2 styles but 3 values!');
+  }
 });
 
 Deno.test('should use minimal codes', () => {
