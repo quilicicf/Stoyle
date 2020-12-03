@@ -1,4 +1,4 @@
-const RESET_CODE = '\x1b[0m';
+export const RESET_CODE = '\x1b[0m';
 
 export enum ForegroundCode {
   Black = 30,
@@ -110,68 +110,45 @@ export interface Style {
   style?: StyleCode,
 }
 
-export enum ColorMode { COLOR, NO_COLOR}
+export enum StyleMode { STYLE, NO_STYLE}
 
-export class Styler {
-  colorCode: string;
-
-  constructor (style: Style) {
-    this.colorCode = Styler.createCode(style);
-  }
-
-  private static createCode (fullStyle: Style) {
-    const { foreground, background, style } = fullStyle;
-    const codes = [ foreground, background, style ].filter(code => !!code);
-    return `\x1b[${codes.join(';')}m`;
-  }
-
-  color (string: string, colorMode: ColorMode) {
-    return colorMode === ColorMode.NO_COLOR ? string : `${this.colorCode}${string}`;
-  }
-
-  colorOnce (string: string, colorMode: ColorMode = ColorMode.COLOR) {
-    return colorMode === ColorMode.NO_COLOR
-      ? string
-      : `${this.colorCode}${string}${RESET_CODE}`;
-  }
+export function createStyle ({ foreground, background, style }: Style): string {
+  const codes = [ foreground, background, style ].filter(code => !!code);
+  return `\x1b[${codes.join(';')}m`;
 }
 
-export interface ColorCommand {
-  string: string,
-  style?: Style | Styler
-}
+export function applyStyle (styles: (string | null)[], styleMode: StyleMode, strings: TemplateStringsArray, ...values: string[]) {
+  if (styles.length !== values.length) {
+    throw Error(`There are ${styles.length} styles but ${values.length} values!`);
+  }
 
-function isStyler (object: any): object is Styler {
-  return object.color !== undefined;
-}
+  const { value, currentStyle: lastStyle } = strings.reduce(
+    (seed: { value: string, currentStyle: string }, string, i) => {
+      const isStyleMode = styleMode === StyleMode.STYLE;
+      const shouldResetStyleForString = isStyleMode
+        && string
+        && seed.currentStyle !== RESET_CODE;
+      const stringStyle = shouldResetStyleForString ? RESET_CODE : '';
 
-export function compose (fullStyle: Style): Styler {
-  return new Styler(fullStyle);
-}
+      const value = values[ i ] || '';
+      const style = styles[ i ] || RESET_CODE;
+      const transitionalStyle = stringStyle || seed.currentStyle;
+      const shouldStyleValue = isStyleMode
+        && value
+        && transitionalStyle !== style;
+      const valueStyle = shouldStyleValue ? style : '';
 
-export function wrap (fragments: ColorCommand[], colorMode: ColorMode = ColorMode.COLOR) {
-  if (fragments.length === 0) { return ''; }
+      seed.value += stringStyle;
+      seed.value += string;
+      seed.value += valueStyle;
+      seed.value += value;
 
-  const isColorMode = colorMode === ColorMode.COLOR;
-  const { result, isDefaultStyle } = fragments
-    .reduce((seed, { string, style }: ColorCommand): { isDefaultStyle: boolean, result: string } => {
-        if (!style) {
-          return isColorMode && !seed.isDefaultStyle
-            ? { isDefaultStyle: true, result: seed.result + `${RESET_CODE}${string}` }
-            : { ...seed, result: seed.result + string };
-        }
+      seed.currentStyle = valueStyle || stringStyle || seed.currentStyle;
 
-        const styler: Styler = isStyler(style) ? style : new Styler(style);
-        return {
-          isDefaultStyle: styler.colorCode === RESET_CODE,
-          result: seed.result + styler.color.bind(styler)(string, colorMode)
-        };
-      },
-      {
-        isDefaultStyle: true,
-        result: ''
-      }
-    );
+      return seed;
+    },
+    { value: '', currentStyle: RESET_CODE },
+  );
 
-  return result + (isColorMode && !isDefaultStyle ? RESET_CODE : '');
+  return `${value}${lastStyle !== RESET_CODE ? RESET_CODE : ''}`;
 }
