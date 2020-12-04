@@ -1,9 +1,16 @@
-import { assertEquals, fail } from 'https://deno.land/std/testing/asserts.ts';
+import { assertEquals, assert, fail } from 'https://deno.land/std/testing/asserts.ts';
 
-import { applyStyle, BackgroundCode, BackgroundRgbCode, createStyle, ForegroundCode, ForegroundRgbCode, parse, RESET_CODE, StyleCode, StyleMode } from './index.ts';
+import { Template, loadTemplate } from './loadTemplate.ts';
+import { RESET_CODE, StyleMode, parse, applyStyle } from './index.ts';
+import {
+  BackgroundCode, BackgroundRgbCode,
+  ForegroundCode, ForegroundRgbCode,
+  StyleCode, createStyle,
+} from './createStyle.ts';
 
 const p = 'styledOrNot'; // Don't judge me, it's shorter and we don't care about the value anywhere
 const empty = '';
+const bold = createStyle({ style: StyleCode.Bold });
 const cyan = createStyle({ foreground: ForegroundCode.Cyan });
 const red = createStyle({ foreground: ForegroundCode.Red });
 const boldBlueOnRed = createStyle({
@@ -16,6 +23,16 @@ const rgbColors = createStyle({
   foreground: new ForegroundRgbCode(40, 177, 100),
   background: new BackgroundRgbCode(100, 40, 177),
 });
+
+interface MyApTemplate extends Template {
+  strong: string,
+  emphasis: string,
+}
+
+const referenceTemplate: MyApTemplate = {
+  strong: bold,
+  emphasis: cyan,
+};
 
 Deno.test('should parse template string', () => {
   const { strings, values } = parse`a template ${p} string`;
@@ -81,4 +98,52 @@ Deno.test('should use minimal codes', () => {
   assertEquals(applyStyle(parse`${p}${p}`, [ cyan, cyan ]), `${cyan}${p}${p}${RESET_CODE}`);
   assertEquals(applyStyle(parse`${p}${p}`, [ cyan, red ]), `${cyan}${p}${red}${p}${RESET_CODE}`);
   assertEquals(applyStyle(parse`${p}test${p}`, [ cyan, red ]), `${cyan}${p}${RESET_CODE}test${red}${p}${RESET_CODE}`);
+});
+
+Deno.test('should load correct template', () => {
+  const template: MyApTemplate = { strong: red, emphasis: bold };
+  const loadedTemplate = loadTemplate(referenceTemplate, template);
+  assertEquals(template, loadedTemplate);
+});
+
+Deno.test('should fail on invalid ANSI code', () => {
+  const invalidCode = 'toto';
+  const template: MyApTemplate = { strong: invalidCode, emphasis: red };
+  try {
+    loadTemplate(referenceTemplate, template);
+    fail('Should have failed, invalid ANSI code');
+  } catch (error) {
+    assert(
+      error.message.includes(`invalid ANSI code: ${invalidCode}`),
+      'The error message for invalid ANSI code seems off',
+    );
+  }
+});
+
+Deno.test('should fail on unknown template properties', () => {
+  const unknownPropertyKey = 'unknown';
+  const template: MyApTemplate = { strong: bold, emphasis: red, [ unknownPropertyKey ]: bold };
+  try {
+    loadTemplate(referenceTemplate, template);
+    fail('Should have failed, unknown property in template');
+  } catch (error) {
+    assert(
+      error.message.includes(`unknown key: ${unknownPropertyKey}`),
+      'The error message for unknown template property seems off',
+    );
+  }
+});
+
+Deno.test('should fail on missing template properties', () => {
+  const missingPropertyKey = 'emphasis';
+  const template = { strong: bold };
+  try {
+    loadTemplate(referenceTemplate, template);
+    fail('Should have failed, missing property in template');
+  } catch (error) {
+    assert(
+      error.message.includes(`missing key: ${missingPropertyKey}`),
+      'The error message for missing template property seems off',
+    );
+  }
 });

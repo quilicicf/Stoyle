@@ -10,8 +10,8 @@ const codeSize = (string) => {
 };
 
 const substituteInReadme = (input, values) => {
-  const getStartMark = (key) => `<!-- SUBSTITUTE-START: ${key} -->`;
-  const endMark = `<!-- SUBSTITUTE-END -->`;
+  const getStartMark = (key) => `<!-- 🔁: ${key} -->`;
+  const endMark = `<!-- 🔁 -->`;
   return Object.entries(values)
     .reduce(
       (seed, [ key, value ]) => {
@@ -23,24 +23,44 @@ const substituteInReadme = (input, values) => {
     );
 };
 
+const getBundledAndMinifiedSizes = (denoPath, sourceCodePath) => {
+  const bundled = execSync(`${denoPath || 'deno'} bundle ${sourceCodePath}`, { encoding: 'utf8' });
+  const { code: minified, error } = minify(bundled, {});
+  if (error) { throw Error(error); }
+
+  return {
+    bundledSize: codeSize(bundled),
+    minifiedSize: codeSize(minified),
+  };
+};
+
 const main = async () => {
   const denoPath = process.argv.splice(2)[ 0 ];
   const rootDirectory = resolvePath(__dirname, '..');
 
-  const sourceFile = resolvePath(rootDirectory, 'index.ts');
-  const bundled = execSync(`${denoPath || 'deno'} bundle ${sourceFile}`, { encoding: 'utf8' });
+  const {
+    bundledSize: indexBundledSize,
+    minifiedSize: indexMinifiedSize,
+  } = getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'index.ts'));
 
-  const { code: minified, error } = minify(bundled, {});
+  const {
+    bundledSize: creatorBundledSize,
+    minifiedSize: creatorMinifiedSize,
+  } = getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'createStyle.ts'));
 
-  if (error) { throw Error(error); }
-
-  const bundledSize = codeSize(bundled);
-  const minifiedSize = codeSize(minified);
+  const {
+    bundledSize: templatorBundledSize,
+    minifiedSize: templatorMinifiedSize,
+  } = getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'loadTemplate.ts'));
 
   const readmeFile = resolvePath(rootDirectory, 'README.md');
   const readme = readFileSync(readmeFile, 'utf8');
-  const updatedReadme = substituteInReadme(readme, { bundledSize, minifiedSize });
-  console.log(updatedReadme);
+  const substitutions = {
+    indexBundledSize, indexMinifiedSize,
+    creatorBundledSize, creatorMinifiedSize,
+    templatorBundledSize, templatorMinifiedSize,
+  };
+  const updatedReadme = substituteInReadme(readme, substitutions);
   writeFileSync(readmeFile, updatedReadme, 'utf8');
 };
 
