@@ -117,7 +117,16 @@ export function createStyle ({ foreground, background, style }: Style): string {
   return `\x1b[${codes.join(';')}m`;
 }
 
-export function applyStyle (styles: (string | null)[], styleMode: StyleMode, strings: TemplateStringsArray, ...values: string[]) {
+export function parse (strings: TemplateStringsArray, ...values: string[]) {
+  return { strings, values };
+}
+
+interface ParsedTemplateString {
+  strings: TemplateStringsArray,
+  values: string[]
+}
+
+export function applyStyle ({ strings, values }: ParsedTemplateString, styles: (string | null)[], styleMode: StyleMode = StyleMode.STYLE) {
   if (styles.length !== values.length) {
     throw Error(`There are ${styles.length} styles but ${values.length} values!`);
   }

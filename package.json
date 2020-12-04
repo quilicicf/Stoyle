@@ -1,0 +1,13 @@
+{
+  "name": "tools",
+  "version": "1.0.0",
+  "description": "Private package for tools used in documenting the Deno module",
+  "private": true,
+  "scripts": {
+    "write-doc": "node npm-scripts/writeDocumentation.js"
+  },
+  "dependencies": {
+    "filesize.js": "2.0.0",
+    "uglify-es": "3.3.9"
+  }
+}
