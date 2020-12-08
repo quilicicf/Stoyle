@@ -29,10 +29,18 @@ const boldCyanOnRed = createStyle({
   style: StyleCode.Bold,
 });
 
+// Styling parameters of a string
 const parameter = 'this';
 console.log(applyStyle(
   parse`I'm styling ${parameter}, but not ${parameter}.`,
   [ boldCyanOnRed, null /* Null style => no style */ ],
+));
+
+// Styling a whole string
+const otherParameter = 'EVERYTHING';
+console.log(applyStyle(
+  `I'm styling ${otherParameter}`,
+  [ boldCyanOnRed ],
 ));
 ```
 
@@ -88,7 +96,7 @@ The goal is to follow the philosophy below:
 
   | Module             | Bundled size                                          | Minified size                                          |
   | ------------------ | ----------------------------------------------------- | ------------------------------------------------------ |
-  | applyStyle (index) | <!-- 🔁: indexBundledSize -->`1.6 Kb`<!-- 🔁 -->      | <!-- 🔁: indexMinifiedSize -->`772.0 b`<!-- 🔁 -->     |
+  | applyStyle (index) | <!-- 🔁: indexBundledSize -->`1.9 Kb`<!-- 🔁 -->      | <!-- 🔁: indexMinifiedSize -->`867.0 b`<!-- 🔁 -->     |
   | createStyle        | <!-- 🔁: creatorBundledSize -->`5.4 Kb`<!-- 🔁 -->    | <!-- 🔁: creatorMinifiedSize -->`2.8 Kb`<!-- 🔁 -->    |
   | loadTemplate       | <!-- 🔁: templatorBundledSize -->`784.0 b`<!-- 🔁 --> | <!-- 🔁: templatorMinifiedSize -->`466.0 b`<!-- 🔁 --> |
 

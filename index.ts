@@ -11,9 +11,13 @@ interface ParsedTemplateString {
   values: string[]
 }
 
-export function applyStyle ({ strings, values }: ParsedTemplateString, styles: (string | null)[], styleMode: StyleMode = StyleMode.STYLE) {
+export function applyStyle (input: ParsedTemplateString | string, styles: (string | null)[], styleMode: StyleMode = StyleMode.STYLE) {
+  const { strings, values } = typeof input === 'string'
+    ? { strings: [ '' ], values: [ input ] }
+    : { strings: [ ...input.strings ], values: input.values };
+
   if (styles.length !== values.length) {
-    throw Error(`There are ${styles.length} styles but ${values.length} values!`);
+    throw Error(`I found ${styles.length} style(s) but ${values.length} value(s)!`);
   }
 
   if (styleMode === StyleMode.NO_STYLE) {

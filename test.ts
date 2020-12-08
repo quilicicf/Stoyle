@@ -47,7 +47,13 @@ Deno.test('should generate codes', () => {
 
 Deno.test('should style one element', () => {
   const output = applyStyle(parse`I am in ${p}!`, [ cyan ], StyleMode.STYLE);
-  assertEquals(output, `I am in \x1b[36m${p}\x1b[0m!`);
+  assertEquals(output, `I am in ${cyan}${p}${RESET_CODE}!`);
+});
+
+Deno.test('should style whole string', () => {
+  const input = 'Je s\'appelle Groot!';
+  const output = applyStyle(input, [ cyan ], StyleMode.STYLE);
+  assertEquals(output, `${cyan}${input}${RESET_CODE}`);
 });
 
 Deno.test('should not style when style is null', () => {
@@ -75,19 +81,32 @@ Deno.test('should support nesting template literals', () => {
   assertEquals(output, `I am ${cyan}${`<${p}>`}${RESET_CODE}!`);
 });
 
+Deno.test('should style numbers', () => {
+  const number = 1;
+  const output = applyStyle(parse`I am ${String(number)}!`, [ cyan ], StyleMode.STYLE);
+  assertEquals(output, `I am ${cyan}${number}${RESET_CODE}!`);
+});
+
 Deno.test('should fail if parameters and styles lengths are not equal', () => {
   try {
     applyStyle(parse`${p}`, [ cyan, cyan ], StyleMode.STYLE);
     fail('Should have failed, too few values');
   } catch (error) {
-    assertEquals(error.message, 'There are 2 styles but 1 values!');
+    assertEquals(error.message, 'I found 2 style(s) but 1 value(s)!');
   }
 
   try {
     applyStyle(parse`${p}${p}${p}`, [ cyan, cyan ], StyleMode.STYLE);
     fail('Should have failed, too many values');
   } catch (error) {
-    assertEquals(error.message, 'There are 2 styles but 3 values!');
+    assertEquals(error.message, 'I found 2 style(s) but 3 value(s)!');
+  }
+
+  try {
+    applyStyle('A string', [ cyan, cyan ], StyleMode.STYLE);
+    fail('Should have failed, too many values');
+  } catch (error) {
+    assertEquals(error.message, 'I found 2 style(s) but 1 value(s)!');
   }
 });
 
