@@ -1,23 +1,64 @@
-/* eslint-disable no-control-regex */
-// Comes from https://github.com/doowb/ansi-colors (MIT License)
-// Made it match exactly since I'm looking for only an ANSI code
-const ANSI_REGEX = /^[\u001b\u009b][[\]#;?()]*(?:(?:(?:[^\W_]*;?[^\W_]*)\u0007)|(?:(?:[0-9]{1,4}(;[0-9]{0,4})*)?[~0-9=<>cf-nqrtyA-PRZ]))$/;
+import { BackgroundSimpleCode, DecorationCode, ForegroundRgbCode, ForegroundSimpleCode } from './mod.ts';
 
-// Would be better done with runtypes or io-ts but none were ported to Deno yet.
-export type Template = { [ key: string ]: string };
+function checkCodeProperty (code: Record<string, any>, propertyName: string): boolean {
+  return !!code[ propertyName ] && typeof code[ propertyName ] === 'number';
+}
 
-export function loadTemplate (reference: Template, template: Template): Template {
-  const errors = [
-    ...Object.entries(template)
-      .map(([ key, code ]) => [
-        ...(reference[ key ] ? [] : [ `unknown key: ${key}` ]),
-        ...(ANSI_REGEX.test(code) ? [] : [ `invalid ANSI code: ${code}` ]),
-      ])
-      .flat(),
-    ...Object.keys(reference)
-      .map((key) => (template[ key ] ? false : `missing key: ${key}`))
-      .filter(Boolean),
-  ];
+function checkValidCodeOrRgb (color: any, enumValues: any[]): boolean {
+  return checkValidCode(color, enumValues)
+    || (color.red && color.green && color.blue);
+}
+
+function checkValidCode (color: any, enumValues: any[]): boolean {
+  return enumValues.includes(color);
+}
+
+function recursiveValidateTemplate (reference: Record<string, any>, template: Record<string, any>, location: string[], errors: string[]): string[] {
+  Object.entries(reference)
+    .forEach(([ key, referenceCode ]) => {
+      if (!referenceCode) { return; }
+      if (typeof referenceCode !== 'object') { return; }
+
+      const templateCode = template[ key ];
+      const childLocation = [ ...location, key ];
+      if (!checkCodeProperty(referenceCode, 'color')
+        && !checkCodeProperty(referenceCode, 'backgroundColor')
+        && !checkCodeProperty(referenceCode, 'decoration')) {
+        if (!templateCode || typeof templateCode !== 'object') {
+          errors.push(`The template should contain an object at ${JSON.stringify(childLocation)}`);
+          return;
+        }
+
+        recursiveValidateTemplate(referenceCode, templateCode, childLocation, errors);
+        return;
+      }
+
+      if (!templateCode || typeof templateCode !== 'object') {
+        errors.push(`The template should contain a style at ${JSON.stringify(childLocation)}`);
+        return;
+      }
+
+      const templateColor = templateCode.color;
+      if (templateColor && !checkValidCodeOrRgb(templateColor, Object.values(ForegroundSimpleCode))) {
+        errors.push(`The template color is invalid at ${JSON.stringify(childLocation)}. It should be a ForegroundSimpleCode or ForegroundRgbCode`);
+      }
+
+      const templateBackgroundColor = templateCode.backgroundColor;
+      if (templateBackgroundColor && !checkValidCodeOrRgb(templateBackgroundColor, Object.values(BackgroundSimpleCode))) {
+        errors.push(`The template backgroundColor is invalid at ${JSON.stringify(childLocation)}. It should be a BackgroundSimpleCode or BackgroundRgbCode`);
+      }
+
+      const templateDecoration = templateCode.decoration;
+      if (templateDecoration && !checkValidCode(templateDecoration, Object.values(DecorationCode))) {
+        errors.push(`The template decoration is invalid at ${JSON.stringify(childLocation)}. It should be a DecorationCode`);
+      }
+    });
+
+  return errors;
+}
+
+export function validateTemplate (reference: Record<string, any>, template: Record<string, any>): Record<string, any> {
+  const errors = recursiveValidateTemplate(reference, template, [], []);
 
   if (errors.length) {
     throw new Error(`[Style template errors]\n* ${errors.join('\n* ')}`);
