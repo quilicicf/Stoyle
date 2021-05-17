@@ -1,4 +1,4 @@
-import { BackgroundSimpleCode, DecorationCode, ForegroundRgbCode, ForegroundSimpleCode } from './mod.ts';
+import { BackgroundSimpleCode, ForegroundSimpleCode, DecorationCode } from './mod.ts';
 
 function checkCodeProperty (code: Record<string, any>, propertyName: string): boolean {
   return !!code[ propertyName ] && typeof code[ propertyName ] === 'number';

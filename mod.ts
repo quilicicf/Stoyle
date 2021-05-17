@@ -45,7 +45,7 @@ export enum BackgroundSimpleCode {
 }
 
 export enum DecorationCode {
-  Reset = 0,
+  Default = 0, // Also called reset, changed for consistency with colors
   Bold = 1,
   Dim = 2,
   Italic = 3,
@@ -55,7 +55,7 @@ export enum DecorationCode {
   Reverse_Video = 7,
   Conceal = 8,
   Crossed_Out = 9,
-  Default = 10, // Also called primary, changed for consistency with colors
+  Primary = 10,
   Alternative_Font_1 = 11,
   Alternative_Font_2 = 12,
   Alternative_Font_3 = 13,
@@ -118,7 +118,9 @@ export interface Style {
 }
 
 export function styleToAnsiCode ({ color, backgroundColor, decoration }: Style): string {
-  const codes = [ color, backgroundColor, decoration ].filter(Boolean);
+  const codes = [ color, backgroundColor, decoration ].filter((code) => (
+    typeof code === 'number' || typeof code === 'object'
+  ));
   return codes.length === 0 ? '' : `\x1b[${codes.join(';')}m`;
 }
 
@@ -147,9 +149,20 @@ interface StylesToApply {
   nodes?: Maybe<Style>[],
 }
 
+interface DecorationChanger {
+  shouldResetFirst: boolean,
+  decoration: Maybe<DecorationCode>,
+}
+
+interface FragmentStyle {
+  color?: Maybe<ForegroundCode>,
+  backgroundColor?: Maybe<BackgroundCode>,
+  decorationChanger?: Maybe<DecorationChanger>,
+}
+
 interface Fragment {
   string: string,
-  style: Style,
+  style: FragmentStyle,
 }
 
 interface Accumulator {
@@ -159,11 +172,26 @@ interface Accumulator {
   fragments: Fragment[],
 }
 
-function computeNextCode<T> (resetCode: any, previousCode: T, codeToApply: Maybe<T>): Maybe<T> {
+function computeNextColorCode<T> (resetCode: any, previousCode: T, codeToApply: Maybe<T>): Maybe<T> {
   if (!codeToApply) {
     return previousCode === resetCode ? undefined : resetCode;
   }
   return codeToApply === previousCode ? undefined : codeToApply;
+}
+
+function computeNextDecorationCode (resetCode: any, previousCode: DecorationCode, codeToApply: Maybe<DecorationCode>): Maybe<DecorationChanger> {
+  if (!codeToApply) {
+    return previousCode === resetCode ? undefined : { shouldResetFirst: false, decoration: resetCode };
+  }
+  return codeToApply === previousCode ? undefined : { shouldResetFirst: previousCode !== resetCode, decoration: codeToApply };
+}
+
+function fragmentStyleToAnsiCode (fragmentStyle: FragmentStyle) {
+  if (!fragmentStyle.decorationChanger) { return styleToAnsiCode(fragmentStyle); }
+
+  const resetStyleString = styleToAnsiCode({ decoration: DecorationCode.Default });
+  const styleString = styleToAnsiCode({ ...fragmentStyle, decoration: fragmentStyle.decorationChanger.decoration });
+  return fragmentStyle.decorationChanger.shouldResetFirst ? resetStyleString + styleString : styleString;
 }
 
 export function style (input: ParsedTemplateString | string,
@@ -173,7 +201,7 @@ export function style (input: ParsedTemplateString | string,
     ? { edges: [ input ], nodes: [] }
     : { edges: [ ...input.edges ], nodes: input.nodes };
 
-  if (edges[ 0 ] === '' && styles.edges) { styles.edges.unshift({}); }
+  if (edges[ 0 ] === '' && styles.edges) { styles.edges.unshift({}); } // TODO: should I?
   if (edges[ edges.length - 1 ] === '' && styles.edges) { styles.edges.push({}); }
 
   if (styles.edges && edges.length !== styles.edges?.length) {
@@ -194,21 +222,20 @@ export function style (input: ParsedTemplateString | string,
 
         if (!string) { return seed; } // Nothing to write for empty strings
 
-        const styleToApply = isEven // Specific styles supersede global style
-          ? styles?.edges?.[ halfIndex ] || styles?.global
-          : styles?.nodes?.[ halfIndex ];
-        const color: Maybe<ForegroundCode> = computeNextCode(ForegroundSimpleCode.FG_Default, seed.currentColor, styleToApply?.color);
-        const backgroundColor: Maybe<BackgroundCode> = computeNextCode(BackgroundSimpleCode.BG_Default, seed.currentBackgroundColor, styleToApply?.backgroundColor);
-        const decoration: Maybe<DecorationCode> = computeNextCode(DecorationCode.Default, seed.currentDecoration, styleToApply?.decoration);
+        const specificStyle = isEven ? styles?.edges?.[ halfIndex ] : styles?.nodes?.[ halfIndex ];
+        const styleToApply = specificStyle || styles?.global; // Specific styles supersede global style
+        const color: Maybe<ForegroundCode> = computeNextColorCode(ForegroundSimpleCode.FG_Default, seed.currentColor, styleToApply?.color);
+        const backgroundColor: Maybe<BackgroundCode> = computeNextColorCode(BackgroundSimpleCode.BG_Default, seed.currentBackgroundColor, styleToApply?.backgroundColor);
+        const decorationChanger: Maybe<DecorationChanger> = computeNextDecorationCode(DecorationCode.Default, seed.currentDecoration, styleToApply?.decoration);
 
         const fragment: Fragment = styleMode === StyleMode.NO_STYLE
           ? { string, style: {} }
-          : { string, style: { color, backgroundColor, decoration } };
+          : { string, style: { color, backgroundColor, decorationChanger: decorationChanger } };
 
         seed.fragments.push(fragment);
         seed.currentColor = color || seed.currentColor;
         seed.currentBackgroundColor = backgroundColor || seed.currentBackgroundColor;
-        seed.currentDecoration = decoration || seed.currentDecoration;
+        seed.currentDecoration = decorationChanger?.decoration === undefined ? seed.currentDecoration : decorationChanger?.decoration;
 
         return seed;
       },
@@ -232,11 +259,14 @@ export function style (input: ParsedTemplateString | string,
     style: {
       color: lastColor === ForegroundSimpleCode.FG_Default ? undefined : ForegroundSimpleCode.FG_Default,
       backgroundColor: lastBackgroundColor === BackgroundSimpleCode.BG_Default ? undefined : BackgroundSimpleCode.BG_Default,
-      decoration: lastDecoration === DecorationCode.Default ? undefined : DecorationCode.Default,
+      decorationChanger: {
+        shouldResetFirst: false,
+        decoration: lastDecoration === DecorationCode.Default ? undefined : DecorationCode.Default,
+      },
     },
   };
 
   return fragments.concat(cleanupFragment)
-    .map((fragment: Fragment) => styleToAnsiCode(fragment.style) + fragment.string)
+    .map((fragment: Fragment) => fragmentStyleToAnsiCode(fragment.style) + fragment.string)
     .join('');
 }
