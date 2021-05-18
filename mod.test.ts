@@ -7,8 +7,10 @@ import { validateTemplate } from './validateTemplate.ts';
 const {
   FG_Cyan, FG_Blue, FG_Red, FG_Default,
 } = ForegroundSimpleCode;
+const {
+  BG_Red, BG_Yellow, BG_Magenta, BG_Default,
+} = BackgroundSimpleCode;
 const { Default, Bold, Italic } = DecorationCode;
-const { BG_Red, BG_Yellow } = BackgroundSimpleCode;
 
 const p = 'styledOrNot'; // Don't judge me, it's shorter and we don't care about the value anywhere
 const empty = '';
@@ -39,6 +41,12 @@ const boldBlueOnRed: Style = {
   backgroundColor: BG_Red,
   decoration: Bold,
 };
+
+const bgMagenta: Style = { backgroundColor: BG_Magenta };
+const bgMagentaString: string = styleToAnsiCode(bgMagenta);
+
+const resetBgColor: Style = { backgroundColor: BG_Default };
+const resetBgColorString: string = styleToAnsiCode(resetBgColor);
 
 const rgbColors: Style = {
   color: new ForegroundRgbCode(40, 177, 100),
@@ -77,6 +85,14 @@ Deno.test('should parse template string', () => {
 Deno.test('should generate codes', () => {
   assertEquals(styleToAnsiCode(boldBlueOnRed), '\x1b[34;41;1m');
   assertEquals(styleToAnsiCode(rgbColors), '\x1b[38;2;40;177;100;48;2;100;40;177m');
+});
+
+Deno.test('should fail on invalid RGB code', () => {
+  assertFailsWith(
+    () => new ForegroundRgbCode(1000, -1, 12),
+    'Should have failed, the RGB numbers are moot',
+    'RGB codes should be between 0 & 255, got: 1000',
+  );
 });
 
 Deno.test('should style one element', () => {
@@ -191,13 +207,7 @@ Deno.test('should not expect edge styles for empty leading/trailing edges', () =
   style(parse`wat${p}`, { edges: [ cyan ] }, StyleMode.STYLE);
 });
 
-Deno.test('should use minimal codes', () => {
-  assertEquals(style(parse`${p}`, { nodes: [ cyan ] }), `${cyanString}${p}${resetColorString}`);
-  assertEquals(style(parse`${p}toto`, { nodes: [ cyan ] }), `${cyanString}${p}${resetColorString}toto`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, {} ] }), `${cyanString}${p}${resetColorString}${p}`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetColorString}`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetColorString}`);
-  assertEquals(style(parse`${p}test${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${resetColorString}test${redString}${p}${resetColorString}`);
+Deno.test('should style complex string', () => {
   assertEquals(
     style(
       parse`Italic ${'boldRed'} bold ${'default'} italic`,
@@ -217,9 +227,26 @@ Deno.test('should use minimal codes', () => {
   );
 });
 
+Deno.test('should use minimal codes', () => {
+  assertEquals(style(parse`${p}`, { nodes: [ cyan ] }), `${cyanString}${p}${resetColorString}`);
+  assertEquals(style(parse`${p}`, { nodes: [ bgMagenta ] }), `${bgMagentaString}${p}${resetBgColorString}`);
+  assertEquals(style(parse`${p}toto`, { nodes: [ cyan ] }), `${cyanString}${p}${resetColorString}toto`);
+  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, {} ] }), `${cyanString}${p}${resetColorString}${p}`);
+  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetColorString}`);
+  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetColorString}`);
+  assertEquals(style(parse`${p}test${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${resetColorString}test${redString}${p}${resetColorString}`);
+});
+
 Deno.test('should load correct template', () => {
   const template = { strong: red, emphasis: bold, warn: bgYellow };
   const validTemplate = validateTemplate(referenceTemplate, template);
+  assertEquals(template, validTemplate);
+});
+
+Deno.test('should load template with non-blocking edge cases', () => {
+  const alternateReferenceTemplate = { ...referenceTemplate, null: null, string: 'string' };
+  const template = { strong: red, emphasis: bold, warn: rgbColors, notInReference: rgbColors };
+  const validTemplate = validateTemplate(alternateReferenceTemplate, template);
   assertEquals(template, validTemplate);
 });
 
@@ -227,16 +254,28 @@ Deno.test('should fail on invalid styles', () => {
   const invalidStyle1 = 'toto';
   const invalidStyle2 = { color: 16874351987 };
   const invalidStyle3 = { backgroundColor: 16874351987 };
-  const template = { strong: invalidStyle1, emphasis: invalidStyle2, warn: invalidStyle3 };
+  const invalidStyle4 = null;
+  const template = {
+    strong: invalidStyle1,
+    emphasis: invalidStyle2,
+    warn: invalidStyle3,
+    whateva: invalidStyle4,
+  };
+
+  const alternateReferenceTemplate = {
+    ...referenceTemplate,
+    whateva: cyan,
+  };
 
   assertFailsWith(
-    () => validateTemplate(referenceTemplate, template),
+    () => validateTemplate(alternateReferenceTemplate, template),
     'Should have failed, invalid style',
     [
       '[Style template errors]',
       '* The template should contain a style at ["strong"]',
       '* The template color is invalid at ["emphasis"]. It should be a ForegroundSimpleCode or ForegroundRgbCode',
       '* The template backgroundColor is invalid at ["warn"]. It should be a BackgroundSimpleCode or BackgroundRgbCode',
+      '* The template should contain a style at ["whateva"]',
     ].join('\n'),
   );
 });
@@ -258,6 +297,32 @@ Deno.test('should fail on invalid nested styles', () => {
       '[Style template errors]',
       '* The template should contain a style at ["validation","emphasis"]',
       '* The template decoration is invalid at ["validation","warn"]. It should be a DecorationCode',
+    ].join('\n'),
+  );
+});
+
+Deno.test('should fail on null nested style', () => {
+  const template = { validation: null };
+
+  assertFailsWith(
+    () => validateTemplate(nestedReferenceTemplate, template),
+    'Should have failed, invalid style',
+    [
+      '[Style template errors]',
+      '* The template should contain an object at ["validation"]',
+    ].join('\n'),
+  );
+});
+
+Deno.test('should fail on non-object nested style', () => {
+  const template = { validation: 'wat?' };
+
+  assertFailsWith(
+    () => validateTemplate(nestedReferenceTemplate, template),
+    'Should have failed, invalid style',
+    [
+      '[Style template errors]',
+      '* The template should contain an object at ["validation"]',
     ].join('\n'),
   );
 });

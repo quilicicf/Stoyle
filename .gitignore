@@ -1,5 +1,8 @@
 fiddle.ts
 
+# Test coverage
+/test_coverage/
+
 # Logs
 logs
 *.log
