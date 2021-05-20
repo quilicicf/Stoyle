@@ -1,7 +1,7 @@
 import {
   Style,
   BackgroundSimpleCode, ForegroundSimpleCode, DecorationCode,
-  parse, style,
+  stoyle, stoyleGlobal,
 } from '../mod.ts';
 
 const boldCyanOnRed: Style = {
@@ -15,8 +15,7 @@ const italic: Style = { decoration: DecorationCode.Italic };
 
 // Styling parameters of a string
 const parameter = 'this';
-console.log(style(
-  parse`I'm styling ${parameter}, but not ${parameter} or ${parameter}.`,
+console.log(stoyle`I'm styling ${parameter}, but not ${parameter} or ${parameter}.`(
   {
     nodes: [ // The nodes are the template string's dynamic parts
       boldCyanOnRed,
@@ -28,14 +27,12 @@ console.log(style(
 
 // Styling a whole string
 const otherParameter = 'EVERYTHING';
-console.log(style(
-  `I'm styling ${otherParameter}`, // The string is not parsed
-  { global: boldCyanOnRed }, // The global style is for the whole string
+console.log(stoyleGlobal`I'm styling ${otherParameter}`( // The string is not parsed
+  boldCyanOnRed, // The global style is for the whole string
 ));
 
 // Full example
-console.log(style(
-  parse`I'm styling ${parameter}, but not ${parameter} or ${parameter}.`,
+console.log(stoyle`I'm styling ${parameter}, but not ${parameter} or ${parameter}.`(
   {
     global: italic, // The global style is for the whole string
     edges: [ // The edges are the template string's static parts
@@ -43,8 +40,8 @@ console.log(style(
     ],
     nodes: [ // The nodes are the template string's dynamic parts
       boldCyanOnRed,
-      undefined, /* Undefined style => no style */
-      {}, /* Empty styles work the same as no style */
+      undefined, // Undefined style means no style, which means global style is applied
+      {}, // Empty styles reset all styles, the global style is not applied
     ],
   },
 ));

@@ -1,13 +1,12 @@
-import { assertEquals, fail } from 'https://deno.land/std/testing/asserts.ts';
-
+import { assertEquals } from 'https://deno.land/std/testing/asserts.ts';
 
 import {
   RESET_CODE, Style, StyleMode, DecorationCode,
   ForegroundRgbCode, ForegroundSimpleCode,
   BackgroundRgbCode, BackgroundSimpleCode,
   stoyleGlobal, stoyle, styleToAnsiCode,
-} from './mod.ts';
-import { validateTemplate } from './validateTemplate.ts';
+} from '../mod.ts';
+import { assertFailsWith } from './assertFailsWith.ts';
 
 const { Bold, Italic } = DecorationCode;
 const { FG_Cyan, FG_Blue, FG_Red } = ForegroundSimpleCode;
@@ -36,8 +35,6 @@ const resetCyanString: string = styleToAnsiCode(cyan, true);
 const red: Style = { color: FG_Red };
 const redString: string = styleToAnsiCode(red);
 
-const bgYellow: Style = { backgroundColor: BG_Yellow };
-
 const boldBlueOnRed: Style = {
   color: FG_Blue,
   backgroundColor: BG_Red,
@@ -50,29 +47,6 @@ const bgMagentaString: string = styleToAnsiCode(bgMagenta);
 const rgbColors: Style = {
   color: new ForegroundRgbCode(40, 177, 100),
   backgroundColor: new BackgroundRgbCode(100, 40, 177),
-};
-
-const referenceTemplate = {
-  strong: bold,
-  emphasis: cyan,
-  warn: bgYellow,
-};
-
-const nestedReferenceTemplate = {
-  validation: {
-    strong: bold,
-    emphasis: cyan,
-    warn: bgYellow,
-  },
-};
-
-const assertFailsWith = (command: () => any, tryMessage: string, catchMessage: string) => {
-  try {
-    command();
-    fail(tryMessage);
-  } catch (error) {
-    assertEquals(error.message, catchMessage);
-  }
 };
 
 Deno.test('should generate codes', () => {
@@ -211,94 +185,4 @@ Deno.test('should use minimal codes', () => {
   assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetDecorationString}`);
   assertEquals(stoyle`${p}${p}`({ nodes: [ bgMagenta, {} ] }), `${bgMagentaString}${p}${resetDecorationString}${p}`);
   assertEquals(stoyle`${p}test${p}`({ nodes: [ cyan, red ] }), `${cyanString}${p}${resetDecorationString}test${redString}${p}${resetDecorationString}`);
-});
-
-Deno.test('should load correct template', () => {
-  const template = { strong: red, emphasis: bold, warn: bgYellow };
-  const validTemplate = validateTemplate(referenceTemplate, template);
-  assertEquals(template, validTemplate);
-});
-
-Deno.test('should load template with non-blocking edge cases', () => {
-  const alternateReferenceTemplate = { ...referenceTemplate, null: null, string: 'string' };
-  const template = { strong: red, emphasis: bold, warn: rgbColors, notInReference: rgbColors };
-  const validTemplate = validateTemplate(alternateReferenceTemplate, template);
-  assertEquals(template, validTemplate);
-});
-
-Deno.test('should fail on invalid styles', () => {
-  const invalidStyle1 = 'toto';
-  const invalidStyle2 = { color: 16874351987 };
-  const invalidStyle3 = { backgroundColor: 16874351987 };
-  const invalidStyle4 = null;
-  const template = {
-    strong: invalidStyle1,
-    emphasis: invalidStyle2,
-    warn: invalidStyle3,
-    whateva: invalidStyle4,
-  };
-
-  const alternateReferenceTemplate = {
-    ...referenceTemplate,
-    whateva: cyan,
-  };
-
-  assertFailsWith(
-    () => validateTemplate(alternateReferenceTemplate, template),
-    'Should have failed, invalid style',
-    [
-      '[Style template errors]',
-      '* The template should contain a style at ["strong"]',
-      '* The template color is invalid at ["emphasis"]. It should be a ForegroundSimpleCode or ForegroundRgbCode',
-      '* The template backgroundColor is invalid at ["warn"]. It should be a BackgroundSimpleCode or BackgroundRgbCode',
-      '* The template should contain a style at ["whateva"]',
-    ].join('\n'),
-  );
-});
-
-Deno.test('should fail on invalid nested styles', () => {
-  const invalidStyle1 = new Date();
-  const invalidStyle2 = 123;
-  const invalidStyle3 = { decoration: 16874351987 };
-  const template = {
-    validation: {
-      strong: invalidStyle1, emphasis: invalidStyle2, warn: invalidStyle3,
-    },
-  };
-
-  assertFailsWith(
-    () => validateTemplate(nestedReferenceTemplate, template),
-    'Should have failed, invalid style',
-    [
-      '[Style template errors]',
-      '* The template should contain a style at ["validation","emphasis"]',
-      '* The template decoration is invalid at ["validation","warn"]. It should be a DecorationCode',
-    ].join('\n'),
-  );
-});
-
-Deno.test('should fail on null nested style', () => {
-  const template = { validation: null };
-
-  assertFailsWith(
-    () => validateTemplate(nestedReferenceTemplate, template),
-    'Should have failed, invalid style',
-    [
-      '[Style template errors]',
-      '* The template should contain an object at ["validation"]',
-    ].join('\n'),
-  );
-});
-
-Deno.test('should fail on non-object nested style', () => {
-  const template = { validation: 'wat?' };
-
-  assertFailsWith(
-    () => validateTemplate(nestedReferenceTemplate, template),
-    'Should have failed, invalid style',
-    [
-      '[Style template errors]',
-      '* The template should contain an object at ["validation"]',
-    ].join('\n'),
-  );
 });

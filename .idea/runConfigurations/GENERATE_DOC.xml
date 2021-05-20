@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="GENERATE_DOC" type="NodeJSConfigurationType" application-parameters="$USER_HOME$/.asdf/shims/deno" path-to-js-file="npm-scripts/writeDocumentation.js" working-dir="$PROJECT_DIR$">
+    <method v="2" />
+  </configuration>
+</component>

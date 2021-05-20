@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "filesize.js": "2.0.0",
-    "uglify-es": "3.3.9"
+    "node-gzip": "1.1.2"
   }
 }

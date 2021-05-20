@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TEST_THEME" type="DenoConfigurationType" exePath="$USER_HOME$/.asdf/shims/deno" inputPath="$PROJECT_DIR$/test/validateTheme.test.ts" programParameters="test">
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
