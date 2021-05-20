@@ -1,35 +1,37 @@
 import { assertEquals, fail } from 'https://deno.land/std/testing/asserts.ts';
 
 
-import { BackgroundRgbCode, BackgroundSimpleCode, DecorationCode, ForegroundRgbCode, ForegroundSimpleCode, parse, Style, style, StyleMode, styleToAnsiCode } from './mod.ts';
+import {
+  RESET_CODE, Style, StyleMode, DecorationCode,
+  ForegroundRgbCode, ForegroundSimpleCode,
+  BackgroundRgbCode, BackgroundSimpleCode,
+  parse, style, styleToAnsiCode,
+} from './mod.ts';
 import { validateTemplate } from './validateTemplate.ts';
 
-const {
-  FG_Cyan, FG_Blue, FG_Red, FG_Default,
-} = ForegroundSimpleCode;
-const {
-  BG_Red, BG_Yellow, BG_Magenta, BG_Default,
-} = BackgroundSimpleCode;
-const { Default, Bold, Italic } = DecorationCode;
+const { Bold, Italic } = DecorationCode;
+const { FG_Cyan, FG_Blue, FG_Red } = ForegroundSimpleCode;
+const { BG_Red, BG_Yellow, BG_Magenta } = BackgroundSimpleCode;
 
 const p = 'styledOrNot'; // Don't judge me, it's shorter and we don't care about the value anywhere
 const empty = '';
 
-const resetDecorationString: string = styleToAnsiCode({ decoration: Default });
+const resetDecorationString: string = styleToAnsiCode({ decoration: RESET_CODE });
 
 const italic: Style = { decoration: Italic };
 const italicString: string = styleToAnsiCode(italic);
+const resetItalicString: string = styleToAnsiCode(italic, true);
 
 const bold: Style = { decoration: Bold };
+const resetBoldString: string = styleToAnsiCode(bold, true);
 
 const boldRed: Style = { color: FG_Red, decoration: Bold };
 const boldRedString: string = styleToAnsiCode(boldRed);
-
-const resetColor: Style = { color: FG_Default };
-const resetColorString: string = styleToAnsiCode(resetColor);
+const resetBoldRedString: string = styleToAnsiCode(boldRed, true);
 
 const cyan: Style = { color: FG_Cyan };
 const cyanString: string = styleToAnsiCode(cyan);
+const resetCyanString: string = styleToAnsiCode(cyan, true);
 
 const red: Style = { color: FG_Red };
 const redString: string = styleToAnsiCode(red);
@@ -44,9 +46,6 @@ const boldBlueOnRed: Style = {
 
 const bgMagenta: Style = { backgroundColor: BG_Magenta };
 const bgMagentaString: string = styleToAnsiCode(bgMagenta);
-
-const resetBgColor: Style = { backgroundColor: BG_Default };
-const resetBgColorString: string = styleToAnsiCode(resetBgColor);
 
 const rgbColors: Style = {
   color: new ForegroundRgbCode(40, 177, 100),
@@ -101,7 +100,7 @@ Deno.test('should style one element', () => {
     { nodes: [ cyan ] },
     StyleMode.STYLE,
   );
-  assertEquals(output, `I am in ${cyanString}${p}${resetColorString}!`);
+  assertEquals(output, `I am in ${cyanString}${p}${resetDecorationString}!`);
 });
 
 Deno.test('should style whole string', () => {
@@ -111,7 +110,7 @@ Deno.test('should style whole string', () => {
     { global: cyan },
     StyleMode.STYLE,
   );
-  assertEquals(output, `${cyanString}${input}${resetColorString}`);
+  assertEquals(output, `${cyanString}${input}${resetDecorationString}`);
 });
 
 Deno.test('should not style when style is empty', () => {
@@ -146,7 +145,7 @@ Deno.test('should style by default', () => {
     parse`I am ${p}!`,
     { nodes: [ cyan ] },
   );
-  assertEquals(output, `I am ${cyanString}${p}${resetColorString}!`);
+  assertEquals(output, `I am ${cyanString}${p}${resetDecorationString}!`);
 });
 
 Deno.test('should support nesting template literals', () => {
@@ -155,7 +154,7 @@ Deno.test('should support nesting template literals', () => {
     { nodes: [ cyan ] },
     StyleMode.STYLE,
   );
-  assertEquals(output, `I am ${cyanString}${`<${p}>`}${resetColorString}!`);
+  assertEquals(output, `I am ${cyanString}${`<${p}>`}${resetDecorationString}!`);
 });
 
 Deno.test('should style numbers', () => {
@@ -165,7 +164,7 @@ Deno.test('should style numbers', () => {
     { nodes: [ cyan ] },
     StyleMode.STYLE,
   );
-  assertEquals(output, `I am ${cyanString}${number}${resetColorString}!`);
+  assertEquals(output, `I am ${cyanString}${number}${resetDecorationString}!`);
 });
 
 Deno.test('should fail if parameters and styles lengths are not equal for nodes', () => {
@@ -207,7 +206,7 @@ Deno.test('should not expect edge styles for empty leading/trailing edges', () =
   style(parse`wat${p}`, { edges: [ cyan ] }, StyleMode.STYLE);
 });
 
-Deno.test('should style complex string', () => {
+Deno.test('should style complex strings', () => {
   assertEquals(
     style(
       parse`Italic ${'boldRed'} bold ${'default'} italic`,
@@ -219,22 +218,33 @@ Deno.test('should style complex string', () => {
     ),
     [
       `${italicString}Italic `,
-      `${resetDecorationString}${boldRedString}boldRed`,
-      `${resetColorString} bold `,
+      `${resetBoldRedString}boldRed`,
+      `${resetBoldString} bold `,
       `${resetDecorationString}default`,
       `${italicString} italic${resetDecorationString}`,
     ].join(''),
   );
+
+  assertEquals(
+    style(
+      parse`${p}toto${p}`,
+      {
+        global: italic,
+        nodes: [ boldRed, cyan ],
+      },
+    ),
+    `${boldRedString}${p}${resetItalicString}toto${resetCyanString}${p}${resetDecorationString}`,
+  );
 });
 
 Deno.test('should use minimal codes', () => {
-  assertEquals(style(parse`${p}`, { nodes: [ cyan ] }), `${cyanString}${p}${resetColorString}`);
-  assertEquals(style(parse`${p}`, { nodes: [ bgMagenta ] }), `${bgMagentaString}${p}${resetBgColorString}`);
-  assertEquals(style(parse`${p}toto`, { nodes: [ cyan ] }), `${cyanString}${p}${resetColorString}toto`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, {} ] }), `${cyanString}${p}${resetColorString}${p}`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetColorString}`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetColorString}`);
-  assertEquals(style(parse`${p}test${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${resetColorString}test${redString}${p}${resetColorString}`);
+  assertEquals(style(parse`${p}`, { nodes: [ cyan ] }), `${cyanString}${p}${resetDecorationString}`);
+  assertEquals(style(parse`${p}`, { nodes: [ bgMagenta ] }), `${bgMagentaString}${p}${resetDecorationString}`);
+  assertEquals(style(parse`${p}toto`, { nodes: [ cyan ] }), `${cyanString}${p}${resetDecorationString}toto`);
+  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, {} ] }), `${cyanString}${p}${resetDecorationString}${p}`);
+  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetDecorationString}`);
+  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetDecorationString}`);
+  assertEquals(style(parse`${p}test${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${resetDecorationString}test${redString}${p}${resetDecorationString}`);
 });
 
 Deno.test('should load correct template', () => {

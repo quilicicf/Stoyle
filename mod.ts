@@ -4,6 +4,8 @@ type Maybe<T> = T | undefined;
  * ANSI CODES *
  *************/
 
+export const RESET_CODE: number = 0;
+
 export enum ForegroundSimpleCode {
   FG_Black = 30,
   FG_Red = 31,
@@ -13,7 +15,6 @@ export enum ForegroundSimpleCode {
   FG_Magenta = 35,
   FG_Cyan = 36,
   FG_White = 37,
-  FG_Default = 39,
   FG_Bright_Black = 90,
   FG_Bright_Red = 91,
   FG_Bright_Green = 92,
@@ -33,7 +34,6 @@ export enum BackgroundSimpleCode {
   BG_Magenta = 45,
   BG_Cyan = 46,
   BG_White = 47,
-  BG_Default = 49,
   BG_Bright_Black = 100,
   BG_Bright_Red = 101,
   BG_Bright_Green = 102,
@@ -45,7 +45,6 @@ export enum BackgroundSimpleCode {
 }
 
 export enum DecorationCode {
-  Default = 0, // Also called reset, changed for consistency with colors
   Bold = 1,
   Dim = 2,
   Italic = 3,
@@ -117,10 +116,13 @@ export interface Style {
   decoration?: DecorationCode,
 }
 
-export function styleToAnsiCode ({ color, backgroundColor, decoration }: Style): string {
-  const codes = [ color, backgroundColor, decoration ].filter((code) => (
-    typeof code === 'number' || typeof code === 'object'
-  ));
+export function styleToAnsiCode ({ color, backgroundColor, decoration }: Style, shouldResetFirst: boolean = false): string {
+  const codes = [
+    ...(shouldResetFirst ? [ RESET_CODE ] : []),
+    color,
+    backgroundColor,
+    decoration,
+  ].filter((code) => (typeof code === 'number' || typeof code === 'object'));
   return codes.length === 0 ? '' : `\x1b[${codes.join(';')}m`;
 }
 
@@ -149,49 +151,49 @@ interface StylesToApply {
   nodes?: Maybe<Style>[],
 }
 
-interface DecorationChanger {
-  shouldResetFirst: boolean,
-  decoration: Maybe<DecorationCode>,
-}
-
-interface FragmentStyle {
-  color?: Maybe<ForegroundCode>,
-  backgroundColor?: Maybe<BackgroundCode>,
-  decorationChanger?: Maybe<DecorationChanger>,
-}
-
 interface Fragment {
   string: string,
-  style: FragmentStyle,
+  shouldResetFirst: boolean,
+  style: Maybe<Style>,
 }
 
 interface Accumulator {
-  currentColor: ForegroundCode,
-  currentBackgroundColor: BackgroundCode,
-  currentDecoration: DecorationCode,
+  currentStyle: Style,
   fragments: Fragment[],
 }
 
-function computeNextColorCode<T> (resetCode: any, previousCode: T, codeToApply: Maybe<T>): Maybe<T> {
-  if (!codeToApply) {
-    return previousCode === resetCode ? undefined : resetCode;
-  }
-  return codeToApply === previousCode ? undefined : codeToApply;
+function areStylesEqual (style1: Style, style2: Style): boolean {
+  return style1.color === style2.color
+    && style1.backgroundColor === style2.backgroundColor
+    && style1.decoration === style2.decoration;
 }
 
-function computeNextDecorationCode (resetCode: any, previousCode: DecorationCode, codeToApply: Maybe<DecorationCode>): Maybe<DecorationChanger> {
-  if (!codeToApply) {
-    return previousCode === resetCode ? undefined : { shouldResetFirst: false, decoration: resetCode };
-  }
-  return codeToApply === previousCode ? undefined : { shouldResetFirst: previousCode !== resetCode, decoration: codeToApply };
+function computeNextFragment (string: string, lastStyle: Style, styleToApply: Maybe<Style>): Fragment {
+  if (!styleToApply || areStylesEqual(styleToApply, lastStyle)) { return { string, shouldResetFirst: false, style: undefined }; }
+
+  const shouldRemoveOldColor = !!lastStyle.color && !styleToApply.color;
+  const shouldRemoveOldBackgroundColor = !!lastStyle.backgroundColor && !styleToApply.backgroundColor;
+  const shouldRemoveOldDecoration = !!lastStyle.decoration && styleToApply.decoration !== lastStyle.decoration;
+  const shouldResetFirst = shouldRemoveOldColor || shouldRemoveOldBackgroundColor || shouldRemoveOldDecoration;
+
+  return { // Colors are reset if unset
+    string,
+    shouldResetFirst,
+    style: {
+      color: shouldResetFirst || styleToApply.color !== lastStyle.color ? styleToApply.color : undefined,
+      backgroundColor: shouldResetFirst || styleToApply.backgroundColor !== lastStyle.backgroundColor ? styleToApply.backgroundColor : undefined,
+      decoration: shouldResetFirst || styleToApply.decoration !== lastStyle.decoration ? styleToApply.decoration : undefined,
+    },
+  };
 }
 
-function fragmentStyleToAnsiCode (fragmentStyle: FragmentStyle) {
-  if (!fragmentStyle.decorationChanger) { return styleToAnsiCode(fragmentStyle); }
+function computeNextCode<T> (lastCode: Maybe<T>, newCode: Maybe<T>, hasReset: boolean): Maybe<T> {
+  if (newCode) { return newCode; }
+  return hasReset || !lastCode ? undefined : lastCode;
+}
 
-  const resetStyleString = styleToAnsiCode({ decoration: DecorationCode.Default });
-  const styleString = styleToAnsiCode({ ...fragmentStyle, decoration: fragmentStyle.decorationChanger.decoration });
-  return fragmentStyle.decorationChanger.shouldResetFirst ? resetStyleString + styleString : styleString;
+function printFragmentStyle (fragment: Fragment) {
+  return fragment.style ? styleToAnsiCode(fragment.style, fragment.shouldResetFirst) : '';
 }
 
 export function style (input: ParsedTemplateString | string,
@@ -212,6 +214,7 @@ export function style (input: ParsedTemplateString | string,
     throw Error(`I found ${nodes.length} node(s), but ${styles.nodes?.length} node style(s)!`);
   }
 
+  const globalStyle = styles?.global || {}; // Defaults to no style
   const accumulator: Accumulator = new Array(edges.length + nodes.length)
     .fill(null)
     .reduce(
@@ -223,50 +226,36 @@ export function style (input: ParsedTemplateString | string,
         if (!string) { return seed; } // Nothing to write for empty strings
 
         const specificStyle = isEven ? styles?.edges?.[ halfIndex ] : styles?.nodes?.[ halfIndex ];
-        const styleToApply = specificStyle || styles?.global; // Specific styles supersede global style
-        const color: Maybe<ForegroundCode> = computeNextColorCode(ForegroundSimpleCode.FG_Default, seed.currentColor, styleToApply?.color);
-        const backgroundColor: Maybe<BackgroundCode> = computeNextColorCode(BackgroundSimpleCode.BG_Default, seed.currentBackgroundColor, styleToApply?.backgroundColor);
-        const decorationChanger: Maybe<DecorationChanger> = computeNextDecorationCode(DecorationCode.Default, seed.currentDecoration, styleToApply?.decoration);
-
+        const styleToApply = specificStyle || globalStyle; // Specific styles supersede global style
         const fragment: Fragment = styleMode === StyleMode.NO_STYLE
-          ? { string, style: {} }
-          : { string, style: { color, backgroundColor, decorationChanger: decorationChanger } };
+          ? { string, shouldResetFirst: false, style: {} }
+          : computeNextFragment(string, seed.currentStyle, styleToApply);
 
         seed.fragments.push(fragment);
-        seed.currentColor = color || seed.currentColor;
-        seed.currentBackgroundColor = backgroundColor || seed.currentBackgroundColor;
-        seed.currentDecoration = decorationChanger?.decoration === undefined ? seed.currentDecoration : decorationChanger?.decoration;
-
+        seed.currentStyle = {
+          color: computeNextCode(seed.currentStyle.color, fragment?.style?.color, fragment.shouldResetFirst),
+          backgroundColor: computeNextCode(seed.currentStyle.backgroundColor, fragment?.style?.backgroundColor, fragment.shouldResetFirst),
+          decoration: computeNextCode(seed.currentStyle.decoration, fragment?.style?.decoration, fragment.shouldResetFirst),
+        };
         return seed;
       },
       {
-        currentColor: ForegroundSimpleCode.FG_Default,
-        currentBackgroundColor: BackgroundSimpleCode.BG_Default,
-        currentDecoration: DecorationCode.Default,
+        currentStyle: {},
         fragments: [],
       } as Accumulator,
     );
 
-  const {
-    fragments,
-    currentColor: lastColor,
-    currentBackgroundColor: lastBackgroundColor,
-    currentDecoration: lastDecoration,
-  } = accumulator;
+  const { fragments, currentStyle: lastStyle } = accumulator;
 
-  const cleanupFragment: Fragment = {
-    string: '',
-    style: {
-      color: lastColor === ForegroundSimpleCode.FG_Default ? undefined : ForegroundSimpleCode.FG_Default,
-      backgroundColor: lastBackgroundColor === BackgroundSimpleCode.BG_Default ? undefined : BackgroundSimpleCode.BG_Default,
-      decorationChanger: {
-        shouldResetFirst: false,
-        decoration: lastDecoration === DecorationCode.Default ? undefined : DecorationCode.Default,
-      },
-    },
-  };
+  const shouldCleanup = !!lastStyle.color
+    || !!lastStyle.backgroundColor
+    || !!lastStyle.decoration;
 
-  return fragments.concat(cleanupFragment)
-    .map((fragment: Fragment) => fragmentStyleToAnsiCode(fragment.style) + fragment.string)
+  const allFragments = shouldCleanup
+    ? fragments.concat({ string: '', shouldResetFirst: true, style: {} })
+    : fragments;
+
+  return allFragments
+    .map((fragment: Fragment) => printFragmentStyle(fragment) + fragment.string)
     .join('');
 }
