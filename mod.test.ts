@@ -5,7 +5,7 @@ import {
   RESET_CODE, Style, StyleMode, DecorationCode,
   ForegroundRgbCode, ForegroundSimpleCode,
   BackgroundRgbCode, BackgroundSimpleCode,
-  parse, style, styleToAnsiCode,
+  stoyleGlobal, stoyle, styleToAnsiCode,
 } from './mod.ts';
 import { validateTemplate } from './validateTemplate.ts';
 
@@ -75,12 +75,6 @@ const assertFailsWith = (command: () => any, tryMessage: string, catchMessage: s
   }
 };
 
-Deno.test('should parse template string', () => {
-  const { edges, nodes } = parse`a template ${p} string`;
-  assertEquals(edges, [ 'a template ', ' string' ]);
-  assertEquals(nodes, [ p ]);
-});
-
 Deno.test('should generate codes', () => {
   assertEquals(styleToAnsiCode(boldBlueOnRed), '\x1b[34;41;1m');
   assertEquals(styleToAnsiCode(rgbColors), '\x1b[38;2;40;177;100;48;2;100;40;177m');
@@ -95,93 +89,61 @@ Deno.test('should fail on invalid RGB code', () => {
 });
 
 Deno.test('should style one element', () => {
-  const output = style(
-    parse`I am in ${p}!`,
-    { nodes: [ cyan ] },
-    StyleMode.STYLE,
-  );
+  const output = stoyle`I am in ${p}!`({ nodes: [ cyan ] }, StyleMode.STYLE);
   assertEquals(output, `I am in ${cyanString}${p}${resetDecorationString}!`);
 });
 
 Deno.test('should style whole string', () => {
-  const input = 'Je s\'appelle Groot!';
-  const output = style(
-    input,
-    { global: cyan },
-    StyleMode.STYLE,
-  );
-  assertEquals(output, `${cyanString}${input}${resetDecorationString}`);
+  const output = stoyleGlobal`Je s'appelle Groot!`(cyan, StyleMode.STYLE);
+  assertEquals(output, `${cyanString}Je s'appelle Groot!${resetDecorationString}`);
 });
 
 Deno.test('should not style when style is empty', () => {
-  const output = style(
-    parse`I am ${p}!`,
-    { nodes: [ {} ] },
-    StyleMode.STYLE,
-  );
+  const output = stoyle`I am ${p}!`({ nodes: [ {} ] }, StyleMode.STYLE);
   assertEquals(output, `I am ${p}!`);
 });
 
 Deno.test('should not style in no color mode', () => {
-  const output = style(
-    parse`I am ${p}!`,
-    { nodes: [ cyan ] },
-    StyleMode.NO_STYLE,
-  );
+  const output = stoyle`I am ${p}!`({ nodes: [ cyan ] }, StyleMode.NO_STYLE);
   assertEquals(output, `I am ${p}!`);
 });
 
 Deno.test('should not style empty value', () => {
-  const output = style(
-    parse`I am ${empty}!`,
-    { nodes: [ cyan ] },
-    StyleMode.STYLE,
-  );
+  const output = stoyle`I am ${empty}!`({ nodes: [ cyan ] }, StyleMode.STYLE);
   assertEquals(output, `I am ${empty}!`);
 });
 
 Deno.test('should style by default', () => {
-  const output = style(
-    parse`I am ${p}!`,
-    { nodes: [ cyan ] },
-  );
+  const output = stoyle`I am ${p}!`({ nodes: [ cyan ] });
   assertEquals(output, `I am ${cyanString}${p}${resetDecorationString}!`);
 });
 
 Deno.test('should support nesting template literals', () => {
-  const output = style(
-    parse`I am ${`<${p}>`}!`,
-    { nodes: [ cyan ] },
-    StyleMode.STYLE,
-  );
-  assertEquals(output, `I am ${cyanString}${`<${p}>`}${resetDecorationString}!`);
+  const output = stoyle`I am ${`<${p}>`}!`({ nodes: [ cyan ] }, StyleMode.STYLE);
+  assertEquals(output, `I am ${cyanString}<${p}>${resetDecorationString}!`);
 });
 
 Deno.test('should style numbers', () => {
   const number = 1;
-  const output = style(
-    parse`I am ${String(number)}!`,
-    { nodes: [ cyan ] },
-    StyleMode.STYLE,
-  );
+  const output = stoyle`I am ${String(number)}!`({ nodes: [ cyan ] }, StyleMode.STYLE);
   assertEquals(output, `I am ${cyanString}${number}${resetDecorationString}!`);
 });
 
 Deno.test('should fail if parameters and styles lengths are not equal for nodes', () => {
   assertFailsWith(
-    () => style(parse`${p}`, { nodes: [ cyan, cyan ] }, StyleMode.STYLE),
+    () => stoyle`${p}`({ nodes: [ cyan, cyan ] }, StyleMode.STYLE),
     'Should have failed, too few values',
     'I found 1 node(s), but 2 node style(s)!',
   );
 
   assertFailsWith(
-    () => style(parse`${p}${p}${p}`, { nodes: [ cyan, cyan ] }, StyleMode.STYLE),
+    () => stoyle`${p}${p}${p}`({ nodes: [ cyan, cyan ] }, StyleMode.STYLE),
     'Should have failed, too many values',
     'I found 3 node(s), but 2 node style(s)!',
   );
 
   assertFailsWith(
-    () => style('A string', { nodes: [ cyan, cyan ] }, StyleMode.STYLE),
+    () => stoyle`A string`({ nodes: [ cyan, cyan ] }, StyleMode.STYLE),
     'Should have failed, too many values',
     'I found 0 node(s), but 2 node style(s)!',
   );
@@ -189,27 +151,26 @@ Deno.test('should fail if parameters and styles lengths are not equal for nodes'
 
 Deno.test('should fail if parameters and styles lengths are not equal for edges', () => {
   assertFailsWith(
-    () => style('whatever', { edges: [ cyan, cyan ] }, StyleMode.STYLE),
+    () => stoyle`whatever`({ edges: [ cyan, cyan ] }, StyleMode.STYLE),
     'Should have failed, too few values',
     'I found 1 edge(s), but 2 edge style(s)!',
   );
 
   assertFailsWith(
-    () => style(parse`wat${p}wot${p}wut`, { edges: [ cyan, cyan ] }, StyleMode.STYLE),
+    () => stoyle`wat${p}wot${p}wut`({ edges: [ cyan, cyan ] }, StyleMode.STYLE),
     'Should have failed, too many values',
     'I found 3 edge(s), but 2 edge style(s)!',
   );
 });
 
-Deno.test('should not expect edge styles for empty leading/trailing edges', () => {
-  style(parse`${p}wat`, { edges: [ cyan ] }, StyleMode.STYLE);
-  style(parse`wat${p}`, { edges: [ cyan ] }, StyleMode.STYLE);
+Deno.test('should expect edge styles for empty leading/trailing edges', () => {
+  stoyle`${p}wat`({ edges: [ {}, cyan ] }, StyleMode.STYLE);
+  stoyle`wat${p}`({ edges: [ cyan, {} ] }, StyleMode.STYLE);
 });
 
 Deno.test('should style complex strings', () => {
   assertEquals(
-    style(
-      parse`Italic ${'boldRed'} bold ${'default'} italic`,
+    stoyle`Italic ${'boldRed'} bold ${'default'} italic`(
       {
         global: italic,
         edges: [ undefined, bold, undefined ],
@@ -226,8 +187,7 @@ Deno.test('should style complex strings', () => {
   );
 
   assertEquals(
-    style(
-      parse`${p}toto${p}`,
+    stoyle`${p}toto${p}`(
       {
         global: italic,
         nodes: [ boldRed, cyan ],
@@ -238,13 +198,13 @@ Deno.test('should style complex strings', () => {
 });
 
 Deno.test('should use minimal codes', () => {
-  assertEquals(style(parse`${p}`, { nodes: [ cyan ] }), `${cyanString}${p}${resetDecorationString}`);
-  assertEquals(style(parse`${p}`, { nodes: [ bgMagenta ] }), `${bgMagentaString}${p}${resetDecorationString}`);
-  assertEquals(style(parse`${p}toto`, { nodes: [ cyan ] }), `${cyanString}${p}${resetDecorationString}toto`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, {} ] }), `${cyanString}${p}${resetDecorationString}${p}`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetDecorationString}`);
-  assertEquals(style(parse`${p}${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetDecorationString}`);
-  assertEquals(style(parse`${p}test${p}`, { nodes: [ cyan, red ] }), `${cyanString}${p}${resetDecorationString}test${redString}${p}${resetDecorationString}`);
+  assertEquals(stoyle`${p}`({ nodes: [ cyan ] }), `${cyanString}${p}${resetDecorationString}`);
+  assertEquals(stoyle`${p}`({ nodes: [ bgMagenta ] }), `${bgMagentaString}${p}${resetDecorationString}`);
+  assertEquals(stoyle`${p}toto`({ nodes: [ cyan ] }), `${cyanString}${p}${resetDecorationString}toto`);
+  assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, {} ] }), `${cyanString}${p}${resetDecorationString}${p}`);
+  assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetDecorationString}`);
+  assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetDecorationString}`);
+  assertEquals(stoyle`${p}test${p}`({ nodes: [ cyan, red ] }), `${cyanString}${p}${resetDecorationString}test${redString}${p}${resetDecorationString}`);
 });
 
 Deno.test('should load correct template', () => {

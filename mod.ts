@@ -127,19 +127,6 @@ export function styleToAnsiCode ({ color, backgroundColor, decoration }: Style, 
 }
 
 /*******************
- * PARSING STRINGS *
- ******************/
-
-interface ParsedTemplateString {
-  edges: TemplateStringsArray,
-  nodes: string[],
-}
-
-export function parse (edges: TemplateStringsArray, ...nodes: string[]): ParsedTemplateString {
-  return { edges, nodes };
-}
-
-/*******************
  * APPLYING STYLES *
  ******************/
 
@@ -196,66 +183,81 @@ function printFragmentStyle (fragment: Fragment) {
   return fragment.style ? styleToAnsiCode(fragment.style, fragment.shouldResetFirst) : '';
 }
 
-export function style (input: ParsedTemplateString | string,
-                       styles: StylesToApply = {},
-                       styleMode: StyleMode = StyleMode.STYLE) {
-  const { edges, nodes } = typeof input === 'string'
-    ? { edges: [ input ], nodes: [] }
-    : { edges: [ ...input.edges ], nodes: input.nodes };
+function getString (index: number, edges: string[], nodes: string[]): string {
+  const isEven = index % 2 === 0;
+  const halfIndex = ~~(index / 2);
+  return isEven ? edges[ halfIndex ] : nodes[ halfIndex ];
+}
 
-  if (edges[ 0 ] === '' && styles.edges) { styles.edges.unshift({}); } // TODO: should I?
-  if (edges[ edges.length - 1 ] === '' && styles.edges) { styles.edges.push({}); }
+function getSpecificStyle (index: number, styles: StylesToApply): Maybe<Style> {
+  const isEven = index % 2 === 0;
+  const halfIndex = ~~(index / 2);
+  return isEven ? styles?.edges?.[ halfIndex ] : styles?.nodes?.[ halfIndex ];
+}
 
-  if (styles.edges && edges.length !== styles.edges?.length) {
-    throw Error(`I found ${edges.length} edge(s), but ${styles.edges?.length} edge style(s)!`);
-  }
+export function stoyleGlobal (edgesAsTemplateStringArray: TemplateStringsArray, ...nodes: string[]) {
+  const edges = [ ...edgesAsTemplateStringArray ];
+  return (style: Style, styleMode: StyleMode = StyleMode.STYLE) => {
+    const wholeString = new Array(edges.length + nodes.length)
+      .fill(null)
+      .map((whatever, index) => getString(index, edges, nodes))
+      .join('');
+    return styleToAnsiCode(style) + wholeString + styleToAnsiCode({}, true);
+  };
+}
 
-  if (styles.nodes && nodes.length !== styles.nodes?.length) {
-    throw Error(`I found ${nodes.length} node(s), but ${styles.nodes?.length} node style(s)!`);
-  }
+export function stoyle (edgesAsTemplateStringArray: TemplateStringsArray, ...nodes: string[]) {
+  const edges = [ ...edgesAsTemplateStringArray ];
+  return (styles: StylesToApply, styleMode: StyleMode = StyleMode.STYLE) => {
+    if (styles.edges && edges.length !== styles.edges?.length) {
+      throw Error(`I found ${edges.length} edge(s), but ${styles.edges?.length} edge style(s)!`);
+    }
 
-  const globalStyle = styles?.global || {}; // Defaults to no style
-  const accumulator: Accumulator = new Array(edges.length + nodes.length)
-    .fill(null)
-    .reduce(
-      (seed: Accumulator, whatever, index) => {
-        const isEven = index % 2 === 0;
-        const halfIndex = ~~(index / 2);
-        const string = isEven ? edges[ halfIndex ] : nodes[ halfIndex ];
+    if (styles.nodes && nodes.length !== styles.nodes?.length) {
+      throw Error(`I found ${nodes.length} node(s), but ${styles.nodes?.length} node style(s)!`);
+    }
 
-        if (!string) { return seed; } // Nothing to write for empty strings
+    const globalStyle = styles?.global || {}; // Defaults to no style
+    const accumulator: Accumulator = new Array(edges.length + nodes.length)
+      .fill(null)
+      .reduce(
+        (seed: Accumulator, whatever, index) => {
+          const string = getString(index, edges, nodes);
 
-        const specificStyle = isEven ? styles?.edges?.[ halfIndex ] : styles?.nodes?.[ halfIndex ];
-        const styleToApply = specificStyle || globalStyle; // Specific styles supersede global style
-        const fragment: Fragment = styleMode === StyleMode.NO_STYLE
-          ? { string, shouldResetFirst: false, style: {} }
-          : computeNextFragment(string, seed.currentStyle, styleToApply);
+          if (!string) { return seed; } // Nothing to write for empty strings
 
-        seed.fragments.push(fragment);
-        seed.currentStyle = {
-          color: computeNextCode(seed.currentStyle.color, fragment?.style?.color, fragment.shouldResetFirst),
-          backgroundColor: computeNextCode(seed.currentStyle.backgroundColor, fragment?.style?.backgroundColor, fragment.shouldResetFirst),
-          decoration: computeNextCode(seed.currentStyle.decoration, fragment?.style?.decoration, fragment.shouldResetFirst),
-        };
-        return seed;
-      },
-      {
-        currentStyle: {},
-        fragments: [],
-      } as Accumulator,
-    );
+          const specificStyle = getSpecificStyle(index, styles);
+          const styleToApply = specificStyle || globalStyle; // Specific styles supersede global style
+          const fragment: Fragment = styleMode === StyleMode.NO_STYLE
+            ? { string, shouldResetFirst: false, style: {} }
+            : computeNextFragment(string, seed.currentStyle, styleToApply);
 
-  const { fragments, currentStyle: lastStyle } = accumulator;
+          seed.fragments.push(fragment);
+          seed.currentStyle = {
+            color: computeNextCode(seed.currentStyle.color, fragment?.style?.color, fragment.shouldResetFirst),
+            backgroundColor: computeNextCode(seed.currentStyle.backgroundColor, fragment?.style?.backgroundColor, fragment.shouldResetFirst),
+            decoration: computeNextCode(seed.currentStyle.decoration, fragment?.style?.decoration, fragment.shouldResetFirst),
+          };
+          return seed;
+        },
+        {
+          currentStyle: {},
+          fragments: [],
+        } as Accumulator,
+      );
 
-  const shouldCleanup = !!lastStyle.color
-    || !!lastStyle.backgroundColor
-    || !!lastStyle.decoration;
+    const { fragments, currentStyle: lastStyle } = accumulator;
 
-  const allFragments = shouldCleanup
-    ? fragments.concat({ string: '', shouldResetFirst: true, style: {} })
-    : fragments;
+    const shouldCleanup = !!lastStyle.color
+      || !!lastStyle.backgroundColor
+      || !!lastStyle.decoration;
 
-  return allFragments
-    .map((fragment: Fragment) => printFragmentStyle(fragment) + fragment.string)
-    .join('');
+    const allFragments = shouldCleanup
+      ? fragments.concat({ string: '', shouldResetFirst: true, style: {} })
+      : fragments;
+
+    return allFragments
+      .map((fragment: Fragment) => printFragmentStyle(fragment) + fragment.string)
+      .join('');
+  };
 }
