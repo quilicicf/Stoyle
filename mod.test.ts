@@ -108,6 +108,11 @@ Deno.test('should not style in no color mode', () => {
   assertEquals(output, `I am ${p}!`);
 });
 
+Deno.test('should not global style in no color mode', () => {
+  const output = stoyleGlobal`I am ${p}!`(cyan, StyleMode.NO_STYLE);
+  assertEquals(output, `I am ${p}!`);
+});
+
 Deno.test('should not style empty value', () => {
   const output = stoyle`I am ${empty}!`({ nodes: [ cyan ] }, StyleMode.STYLE);
   assertEquals(output, `I am ${empty}!`);
@@ -204,6 +209,7 @@ Deno.test('should use minimal codes', () => {
   assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, {} ] }), `${cyanString}${p}${resetDecorationString}${p}`);
   assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, cyan ] }), `${cyanString}${p}${p}${resetDecorationString}`);
   assertEquals(stoyle`${p}${p}`({ nodes: [ cyan, red ] }), `${cyanString}${p}${redString}${p}${resetDecorationString}`);
+  assertEquals(stoyle`${p}${p}`({ nodes: [ bgMagenta, {} ] }), `${bgMagentaString}${p}${resetDecorationString}${p}`);
   assertEquals(stoyle`${p}test${p}`({ nodes: [ cyan, red ] }), `${cyanString}${p}${resetDecorationString}test${redString}${p}${resetDecorationString}`);
 });
 

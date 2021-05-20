@@ -6,6 +6,7 @@ type Maybe<T> = T | undefined;
 
 export const RESET_CODE: number = 0;
 
+// noinspection JSUnusedGlobalSymbols
 export enum ForegroundSimpleCode {
   FG_Black = 30,
   FG_Red = 31,
@@ -25,6 +26,7 @@ export enum ForegroundSimpleCode {
   FG_Bright_White = 97,
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum BackgroundSimpleCode {
   BG_Black = 40,
   BG_Red = 41,
@@ -44,6 +46,7 @@ export enum BackgroundSimpleCode {
   BG_Bright_White = 107,
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum DecorationCode {
   Bold = 1,
   Dim = 2,
@@ -202,7 +205,9 @@ export function stoyleGlobal (edgesAsTemplateStringArray: TemplateStringsArray, 
       .fill(null)
       .map((whatever, index) => getString(index, edges, nodes))
       .join('');
-    return styleToAnsiCode(style) + wholeString + styleToAnsiCode({}, true);
+    return styleMode === StyleMode.NO_STYLE
+      ? wholeString
+      : styleToAnsiCode(style) + wholeString + styleToAnsiCode({}, true);
   };
 }
 
