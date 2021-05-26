@@ -27,14 +27,14 @@ console.log(stoyle`I'm styling ${parameter}, but not ${parameter} or ${parameter
 
 // Styling a whole string
 const otherParameter = 'EVERYTHING';
-console.log(stoyleGlobal`I'm styling ${otherParameter}`( // The string is not parsed
-  boldCyanOnRed, // The global style is for the whole string
-));
+console.log(
+  stoyleGlobal`I'm styling ${otherParameter}`(boldCyanOnRed), // The style is for the whole string with stoyleGlobal
+);
 
 // Full example
 console.log(stoyle`I'm styling ${parameter}, but not ${parameter} or ${parameter}.`(
   {
-    global: italic, // The global style is for the whole string
+    global: italic, // The global style is for the whole string, it's overwritten by edges/nodes styles
     edges: [ // The edges are the template string's static parts
       undefined, bold, undefined, undefined,
     ],

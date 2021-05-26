@@ -16,7 +16,7 @@ const substituteInReadme = (input, values) => {
     .reduce(
       (seed, [ key, value ]) => {
         const startMark = getStartMark(key);
-        const regex = new RegExp(`${startMark}.*?${endMark}`, 'g');
+        const regex = new RegExp(`${startMark}.*?${endMark}`, 'gs');
         return seed.replace(regex, `${startMark}${value}${endMark}`);
       },
       input,
@@ -35,9 +35,21 @@ const getBundledAndMinifiedSizes = async (denoPath, sourceCodePath) => {
   };
 };
 
+const wrapInCodeFences = (language, code) => `
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+`;
+
 const main = async () => {
   const denoPath = process.argv.splice(2)[ 0 ];
   const rootDirectory = resolvePath(__dirname, '..');
+
+  const basicExamplePath = resolvePath(rootDirectory, 'examples', 'basic.ts');
+  const basicExampleCode = readFileSync(basicExamplePath, 'utf8');
+  const wrappedBasicExampleCode = wrapInCodeFences('js', basicExampleCode);
 
   const {
     rawSize: modRawSize,
@@ -54,6 +66,7 @@ const main = async () => {
   const readmeFile = resolvePath(rootDirectory, 'README.md');
   const readme = readFileSync(readmeFile, 'utf8');
   const substitutions = {
+    basicExample: wrappedBasicExampleCode,
     modRawSize, modGzippedSize, modBundledSize,
     themerRawSize, themerGzippedSize, themerBundledSize,
   };
