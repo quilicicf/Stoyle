@@ -1,4 +1,4 @@
-# ColorMee
+# Stoyle
 
 ANSI styling for Deno
 
