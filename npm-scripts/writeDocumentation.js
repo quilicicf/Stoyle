@@ -1,11 +1,11 @@
-const { minify } = require('uglify-es');
+const { gzip } = require('node-gzip');
 const { default: fileSize } = require('filesize.js');
 const { execSync } = require('child_process');
 const { resolve: resolvePath } = require('path');
 const { readFileSync, writeFileSync } = require('fs');
 
-const codeSize = (string) => {
-  const bytesNumber = (new TextEncoder().encode(string)).length;
+const codeSize = (input) => {
+  const bytesNumber = input.length || (new TextEncoder().encode(input)).length;
   return `\`${fileSize(bytesNumber)}\``;
 };
 
@@ -16,49 +16,59 @@ const substituteInReadme = (input, values) => {
     .reduce(
       (seed, [ key, value ]) => {
         const startMark = getStartMark(key);
-        const regex = new RegExp(`${startMark}.*?${endMark}`, 'g');
+        const regex = new RegExp(`${startMark}.*?${endMark}`, 'gs');
         return seed.replace(regex, `${startMark}${value}${endMark}`);
       },
       input,
     );
 };
 
-const getBundledAndMinifiedSizes = (denoPath, sourceCodePath) => {
-  const bundled = execSync(`${denoPath || 'deno'} bundle ${sourceCodePath}`, { encoding: 'utf8' });
-  const { code: minified, error } = minify(bundled, {});
-  if (error) { throw Error(error); }
+const getBundledAndMinifiedSizes = async (denoPath, sourceCodePath) => {
+  const raw = readFileSync(sourceCodePath, 'utf8');
+  const gzipped = await gzip(raw);
+  const bundled = execSync(`${denoPath || 'deno'} bundle --no-check ${sourceCodePath}`, { encoding: 'utf8' });
 
   return {
+    rawSize: codeSize(raw),
+    gzippedSize: codeSize(gzipped),
     bundledSize: codeSize(bundled),
-    minifiedSize: codeSize(minified),
   };
 };
+
+const wrapInCodeFences = (language, code) => `
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+`;
 
 const main = async () => {
   const denoPath = process.argv.splice(2)[ 0 ];
   const rootDirectory = resolvePath(__dirname, '..');
 
-  const {
-    bundledSize: indexBundledSize,
-    minifiedSize: indexMinifiedSize,
-  } = getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'index.ts'));
+  const basicExamplePath = resolvePath(rootDirectory, 'examples', 'basic.ts');
+  const basicExampleCode = readFileSync(basicExamplePath, 'utf8');
+  const wrappedBasicExampleCode = wrapInCodeFences('js', basicExampleCode);
 
   const {
-    bundledSize: creatorBundledSize,
-    minifiedSize: creatorMinifiedSize,
-  } = getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'createStyle.ts'));
+    rawSize: modRawSize,
+    gzippedSize: modGzippedSize,
+    bundledSize: modBundledSize,
+  } = await getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'mod.ts'));
 
   const {
-    bundledSize: templatorBundledSize,
-    minifiedSize: templatorMinifiedSize,
-  } = getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'loadTemplate.ts'));
+    rawSize: themerRawSize,
+    gzippedSize: themerGzippedSize,
+    bundledSize: themerBundledSize,
+  } = await getBundledAndMinifiedSizes(denoPath, resolvePath(rootDirectory, 'validateTheme.ts'));
 
   const readmeFile = resolvePath(rootDirectory, 'README.md');
   const readme = readFileSync(readmeFile, 'utf8');
   const substitutions = {
-    indexBundledSize, indexMinifiedSize,
-    creatorBundledSize, creatorMinifiedSize,
-    templatorBundledSize, templatorMinifiedSize,
+    basicExample: wrappedBasicExampleCode,
+    modRawSize, modGzippedSize, modBundledSize,
+    themerRawSize, themerGzippedSize, themerBundledSize,
   };
   const updatedReadme = substituteInReadme(readme, substitutions);
   writeFileSync(readmeFile, updatedReadme, 'utf8');
