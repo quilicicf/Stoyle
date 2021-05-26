@@ -222,7 +222,7 @@ export function stoyle (edgesAsTemplateStringArray: TemplateStringsArray, ...nod
       throw Error(`I found ${nodes.length} node(s), but ${styles.nodes?.length} node style(s)!`);
     }
 
-    const globalStyle = styles?.global || {}; // Defaults to no style
+    const globalStyle = styles?.global ?? {}; // Defaults to no style
     const accumulator: Accumulator = new Array(edges.length + nodes.length)
       .fill(null)
       .reduce(
@@ -232,7 +232,7 @@ export function stoyle (edgesAsTemplateStringArray: TemplateStringsArray, ...nod
           if (!string) { return seed; } // Nothing to write for empty strings
 
           const specificStyle = getSpecificStyle(index, styles);
-          const styleToApply = specificStyle || globalStyle; // Specific styles supersede global style
+          const styleToApply = specificStyle ?? globalStyle; // Specific styles supersede global style
           const fragment: Fragment = styleMode === StyleMode.NO_STYLE
             ? { string, shouldResetFirst: false, style: {} }
             : computeNextFragment(string, seed.currentStyle, styleToApply);
