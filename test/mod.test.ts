@@ -67,6 +67,14 @@ Deno.test('should style one element', () => {
   assertEquals(output, `I am in ${cyanString}${p}${resetDecorationString}!`);
 });
 
+Deno.test('should style anything', () => {
+  const symbol = Symbol('123');
+  const array = [ 1, 2, 3 ];
+  const object = { a: 'b' };
+  const output = stoyleGlobal`${symbol} ${array} ${object} ${1} ${false} ${null} ${undefined}!`(cyan);
+  assertEquals(output, `${cyanString}Symbol(123) 1,2,3 [object Object] 1 false null undefined!${resetDecorationString}`);
+});
+
 Deno.test('should style whole string', () => {
   const output = stoyleGlobal`Je s'appelle Groot!`(cyan, StyleMode.STYLE);
   assertEquals(output, `${cyanString}Je s'appelle Groot!${resetDecorationString}`);

@@ -141,6 +141,10 @@ interface StylesToApply {
   nodes?: Maybe<Style>[],
 }
 
+type GlobalStyler = (style: Style, styleMode?: StyleMode) => string;
+
+type Styler = (stylesToApply: StylesToApply, styleMode?: StyleMode) => string;
+
 interface Fragment {
   string: string,
   shouldResetFirst: boolean,
@@ -186,10 +190,12 @@ function printFragmentStyle (fragment: Fragment) {
   return fragment.style ? styleToAnsiCode(fragment.style, fragment.shouldResetFirst) : '';
 }
 
-function getString (index: number, edges: string[], nodes: string[]): string {
+function getString (index: number, edges: string[], nodes: any[]): string {
   const isEven = index % 2 === 0;
   const halfIndex = ~~(index / 2);
-  return isEven ? edges[ halfIndex ] : nodes[ halfIndex ];
+  return String(
+    isEven ? edges[ halfIndex ] : nodes[ halfIndex ],
+  );
 }
 
 function getSpecificStyle (index: number, styles: StylesToApply): Maybe<Style> {
@@ -198,20 +204,24 @@ function getSpecificStyle (index: number, styles: StylesToApply): Maybe<Style> {
   return isEven ? styles?.edges?.[ halfIndex ] : styles?.nodes?.[ halfIndex ];
 }
 
-export function stoyleGlobal (edgesAsTemplateStringArray: TemplateStringsArray, ...nodes: string[]) {
+export function stoyleString (input: string, style: Style, styleMode: StyleMode = StyleMode.STYLE): string {
+  return styleMode === StyleMode.NO_STYLE
+    ? input
+    : styleToAnsiCode(style) + input + styleToAnsiCode({}, true);
+}
+
+export function stoyleGlobal (edgesAsTemplateStringArray: TemplateStringsArray, ...nodes: any[]): GlobalStyler {
   const edges = [ ...edgesAsTemplateStringArray ];
   return (style: Style, styleMode: StyleMode = StyleMode.STYLE) => {
     const wholeString = new Array(edges.length + nodes.length)
       .fill(null)
       .map((whatever, index) => getString(index, edges, nodes))
       .join('');
-    return styleMode === StyleMode.NO_STYLE
-      ? wholeString
-      : styleToAnsiCode(style) + wholeString + styleToAnsiCode({}, true);
+    return stoyleString(wholeString, style, styleMode);
   };
 }
 
-export function stoyle (edgesAsTemplateStringArray: TemplateStringsArray, ...nodes: string[]) {
+export function stoyle (edgesAsTemplateStringArray: TemplateStringsArray, ...nodes: any[]): Styler {
   const edges = [ ...edgesAsTemplateStringArray ];
   return (styles: StylesToApply, styleMode: StyleMode = StyleMode.STYLE) => {
     if (styles.edges && edges.length !== styles.edges?.length) {
