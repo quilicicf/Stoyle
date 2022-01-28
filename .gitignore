@@ -1,3 +1,7 @@
+# SWC stuff
+.swc
+
+# To run local tests fast
 fiddle.ts
 
 # Test coverage

@@ -1,13 +1,22 @@
 {
-  "name": "tools",
+  "name": "stoyle",
   "version": "1.0.0",
-  "description": "Private package for tools used in documenting the Deno module",
-  "private": true,
+  "description": "Stoyle for NodeJS",
+  "license": "Apache-2.0",
   "scripts": {
-    "write-doc": "node npm-scripts/writeDocumentation.js"
+    "write-doc": "node npm-scripts/writeDocumentation.js",
+    "build": "npm run build-code && npm run build-types",
+    "build-code": "swc --source-maps true --out-dir dist mod.ts",
+    "build-types": "npx tsc --emitDeclarationOnly --declaration --outDir dist --lib esnext mod.ts"
   },
-  "dependencies": {
+  "type": "module",
+  "main": "dist/mod.js",
+  "types": "dist/mod.d.ts",
+  "devDependencies": {
+    "@swc/cli": "0.1.55",
+    "@swc/core": "1.2.135",
     "filesize.js": "2.0.0",
-    "node-gzip": "1.1.2"
+    "node-gzip": "1.1.2",
+    "typescript": "4.5.5"
   }
 }
