@@ -4,6 +4,7 @@
   "description": "Stoyle for NodeJS",
   "license": "Apache-2.0",
   "scripts": {
+    "test": "deno test test/",
     "write-doc": "node npm-scripts/writeDocumentation.js",
     "build": "npm run build-code && npm run build-types",
     "build-code": "spack --config \"$(pwd)/spack.config.cjs\"",
