@@ -6,7 +6,7 @@
   "scripts": {
     "write-doc": "node npm-scripts/writeDocumentation.js",
     "build": "npm run build-code && npm run build-types",
-    "build-code": "swc --source-maps true --out-dir dist mod.ts",
+    "build-code": "spack --config \"$(pwd)/spack.config.cjs\"",
     "build-types": "tsc --emitDeclarationOnly --declaration --outDir dist --lib esnext mod.ts"
   },
   "type": "module",
