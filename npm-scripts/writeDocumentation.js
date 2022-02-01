@@ -1,8 +1,10 @@
-const { gzip } = require('node-gzip');
-const { default: fileSize } = require('filesize.js');
-const { execSync } = require('child_process');
-const { resolve: resolvePath } = require('path');
-const { readFileSync, writeFileSync } = require('fs');
+import { gzip } from 'node-gzip';
+import fileSizeJs from 'filesize.js';
+import { execSync } from 'child_process';
+import { resolve as resolvePath } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+
+const { default: fileSize } = fileSizeJs;
 
 const codeSize = (input) => {
   const bytesNumber = input.length || (new TextEncoder().encode(input)).length;
@@ -45,7 +47,8 @@ ${code}
 
 const main = async () => {
   const denoPath = process.argv.splice(2)[ 0 ];
-  const rootDirectory = resolvePath(__dirname, '..');
+  const fileName = new URL(import.meta.url).pathname;
+  const rootDirectory = resolvePath(fileName, '..', '..');
 
   const basicExamplePath = resolvePath(rootDirectory, 'examples', 'basic.ts');
   const basicExampleCode = readFileSync(basicExamplePath, 'utf8');
@@ -74,4 +77,5 @@ const main = async () => {
   writeFileSync(readmeFile, updatedReadme, 'utf8');
 };
 
-main();
+main()
+  .catch((error) => console.log(error.stack));
