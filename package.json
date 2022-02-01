@@ -13,6 +13,13 @@
   "type": "module",
   "main": "dist/mod.js",
   "types": "dist/mod.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quilicicf/Stoyle.git"
+  },
+  "files": [
+    "dist/*"
+  ],
   "devDependencies": {
     "@swc/cli": "0.1.55",
     "@swc/core": "1.2.135",
