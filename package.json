@@ -7,7 +7,7 @@
     "write-doc": "node npm-scripts/writeDocumentation.js",
     "build": "npm run build-code && npm run build-types",
     "build-code": "swc --source-maps true --out-dir dist mod.ts",
-    "build-types": "npx tsc --emitDeclarationOnly --declaration --outDir dist --lib esnext mod.ts"
+    "build-types": "tsc --emitDeclarationOnly --declaration --outDir dist --lib esnext mod.ts"
   },
   "type": "module",
   "main": "dist/mod.js",

@@ -1,6 +1,6 @@
 # Stoyle
 
-ANSI styling for Deno
+ANSI styling for Deno/NodeJS
 
 <!-- TOC START -->
 
