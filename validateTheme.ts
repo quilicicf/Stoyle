@@ -1,3 +1,4 @@
+// @ts-ignore: Ignore TS2691
 import { BackgroundSimpleCode, ForegroundSimpleCode, DecorationCode } from './mod.ts';
 
 function checkCodeProperty (code: Record<string, any>, propertyName: string): boolean {

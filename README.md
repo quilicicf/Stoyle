@@ -1,6 +1,6 @@
 # Stoyle
 
-ANSI styling for Deno
+ANSI styling for Deno/NodeJS
 
 <!-- TOC START -->
 
@@ -86,8 +86,8 @@ console.log(`${red(commit.sha)} ${bold(blue(`<${commit.owner}>`))}`);
 Compare to the following:
 
 ```js
-import { stoyle } from 'stoyle'; // dummy URL, of course
-import { theme } from './graphicalChart.ts';
+import { stoyle } from 'stoyle'; // dummy location, of course
+import { theme } from './theme.ts';
 
 const { commit: { shaStyle, authorStyle } } = theme;
 const styleMode = computeStyleModeFromCliArgOrWhatever(); // Allows no-color mode
@@ -104,9 +104,12 @@ More verbose, but much cleaner too!
 
 ## For what usage
 
-I wrote this lib to create a theming helper for a CLI tool.
+I wrote this lib to help me write CLI tools with a theme that would be:
 
-The idea is to support theming and batch-mode (`--no-color` mode).
+* centralized
+* consistent
+* swap-able
+* de-activated easily (batch/CI mode)
 
 ## Modules
 
@@ -130,8 +133,8 @@ The goal is to follow the philosophy below:
 
   | Module           | Raw size                                      | Gzipped size                                       | Bundled size                                      |
   | ---------------- | --------------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
-  | mod.ts           | <!-- 🔁: modRawSize -->`8.1 Kb`<!-- 🔁 -->    | <!-- 🔁: modGzippedSize -->`2.4 Kb`<!-- 🔁 -->     | <!-- 🔁: modBundledSize -->`11.6 Kb`<!-- 🔁 -->   |
-  | validateTheme.ts | <!-- 🔁: themerRawSize -->`2.8 Kb`<!-- 🔁 --> | <!-- 🔁: themerGzippedSize -->`794.0 b`<!-- 🔁 --> | <!-- 🔁: themerBundledSize -->`8.4 Kb`<!-- 🔁 --> |
+  | mod.ts           | <!-- 🔁: modRawSize -->`8.5 Kb`<!-- 🔁 -->    | <!-- 🔁: modGzippedSize -->`2.4 Kb`<!-- 🔁 -->     | <!-- 🔁: modBundledSize -->`11.8 Kb`<!-- 🔁 -->   |
+  | validateTheme.ts | <!-- 🔁: themerRawSize -->`2.8 Kb`<!-- 🔁 --> | <!-- 🔁: themerGzippedSize -->`820.0 b`<!-- 🔁 --> | <!-- 🔁: themerBundledSize -->`8.2 Kb`<!-- 🔁 --> |
 
 My regrets:
 
