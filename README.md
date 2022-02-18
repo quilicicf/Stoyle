@@ -86,8 +86,8 @@ console.log(`${red(commit.sha)} ${bold(blue(`<${commit.owner}>`))}`);
 Compare to the following:
 
 ```js
-import { stoyle } from 'stoyle'; // dummy URL, of course
-import { theme } from './graphicalChart.ts';
+import { stoyle } from 'stoyle'; // dummy location, of course
+import { theme } from './theme.ts';
 
 const { commit: { shaStyle, authorStyle } } = theme;
 const styleMode = computeStyleModeFromCliArgOrWhatever(); // Allows no-color mode
@@ -104,9 +104,12 @@ More verbose, but much cleaner too!
 
 ## For what usage
 
-I wrote this lib to create a theming helper for a CLI tool.
+I wrote this lib to help me write CLI tools with a theme that would be:
 
-The idea is to support theming and batch-mode (`--no-color` mode).
+* centralized
+* consistent
+* swap-able
+* de-activated easily (batch/CI mode)
 
 ## Modules
 
