@@ -78,4 +78,4 @@ const main = async () => {
 };
 
 main()
-  .catch((error) => console.log(error.stack));
+  .catch((error) => process.stderr.write(error.stack));
