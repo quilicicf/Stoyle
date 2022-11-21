@@ -1,0 +1,32 @@
+{
+  "name": "eslint-plugin-stoyle",
+  "version": "1.0.0",
+  "description": "An ESLINT plugin to validate that stoyle is used correctly and avoid runtime surprises",
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests/testAll.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/quilicicf/Stoyle.git"
+  },
+  "keywords": [
+    "ansi",
+    "style",
+    "eslint",
+    "stoyle",
+    "cli"
+  ],
+  "author": "quilicicf <quilicicf@gmail.com> (https://github.com/quilicicf)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/quilicicf/Stoyle/issues"
+  },
+  "homepage": "https://github.com/quilicicf/Stoyle#readme",
+  "dependencies": {
+    "acorn": "8.8.1"
+  },
+  "peerDependencies": {
+    "eslint": "8.28.0"
+  }
+}
