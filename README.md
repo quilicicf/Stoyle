@@ -133,8 +133,8 @@ The goal is to follow the philosophy below:
 
   | Module           | Raw size                                      | Gzipped size                                       | Bundled size                                      |
   | ---------------- | --------------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
-  | mod.ts           | <!-- 🔁: modRawSize -->`8.5 Kb`<!-- 🔁 -->    | <!-- 🔁: modGzippedSize -->`2.4 Kb`<!-- 🔁 -->     | <!-- 🔁: modBundledSize -->`11.8 Kb`<!-- 🔁 -->   |
-  | validateTheme.ts | <!-- 🔁: themerRawSize -->`2.8 Kb`<!-- 🔁 --> | <!-- 🔁: themerGzippedSize -->`820.0 b`<!-- 🔁 --> | <!-- 🔁: themerBundledSize -->`8.2 Kb`<!-- 🔁 --> |
+  | mod.ts           | <!-- 🔁: modRawSize -->`8.5 Kb`<!-- 🔁 -->    | <!-- 🔁: modGzippedSize -->`2.4 Kb`<!-- 🔁 -->     | <!-- 🔁: modBundledSize -->`11.7 Kb`<!-- 🔁 -->   |
+  | validateTheme.ts | <!-- 🔁: themerRawSize -->`2.8 Kb`<!-- 🔁 --> | <!-- 🔁: themerGzippedSize -->`820.0 b`<!-- 🔁 --> | <!-- 🔁: themerBundledSize -->`8.1 Kb`<!-- 🔁 --> |
 
 My regrets:
 
