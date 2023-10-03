@@ -1,8 +1,9 @@
 import { RuleTester } from 'eslint';
 import eslintRule from '../src/stoyle-usage.mjs';
+import parserOptions from './lib/parserOptions.mjs';
 
-export default function (parsingOptions) {
-  new RuleTester(parsingOptions).run('nodes-mismatch', eslintRule, {
+new RuleTester(parserOptions)
+  .run('nodes-mismatch', eslintRule, {
     valid: [
       { code: 'stoyle`Kikoo`({})' },
       { code: 'stoyle`Kikoo`({nodes: []})' },
@@ -20,4 +21,3 @@ export default function (parsingOptions) {
       },
     ],
   });
-};

@@ -39,7 +39,7 @@
           <emptyLine />
           <package name="javax" withSubpackages="true" static="false" />
           <package name="java" withSubpackages="true" static="false" />
-          <package name="import org" withSubpackages="true" static="false" />
+          <package name="org" withSubpackages="true" static="false" />
           <emptyLine />
           <package name="" withSubpackages="true" static="true" />
         </value>
@@ -49,7 +49,7 @@
       <option name="JD_PRESERVE_LINE_FEEDS" value="true" />
       <option name="JD_PARAM_DESCRIPTION_ON_NEW_LINE" value="true" />
     </JavaCodeStyleSettings>
-    <PostgresCodeStyleSettings version="5">
+    <PostgresCodeStyleSettings version="6">
       <option name="USE_GENERAL_STYLE" value="false" />
       <option name="CUSTOM_TYPE_CASE" value="0" />
       <option name="QUERY_SECTION_1ST_WORD_ALIGN" value="2" />
@@ -97,9 +97,6 @@
       <option name="SPACES_WITHIN_OBJECT_LITERAL_BRACES" value="true" />
       <option name="SPACES_WITHIN_IMPORTS" value="true" />
     </TypeScriptCodeStyleSettings>
-    <XML>
-      <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
-    </XML>
     <yaml>
       <option name="SEQUENCE_ON_NEW_LINE" value="true" />
     </yaml>

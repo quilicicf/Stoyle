@@ -1,12 +1,13 @@
 import { RuleTester } from 'eslint';
 import eslintRule from '../src/stoyle-usage.mjs';
+import parserOptions from './lib/parserOptions.mjs';
 
-export default function (parsingOptions) {
-  new RuleTester(parsingOptions).run('edges-mismatch', eslintRule, {
+new RuleTester(parserOptions)
+  .run('edges-mismatch', eslintRule, {
     valid: [
-      { code: 'stoyle`Kikoo`({})' },
-      { code: 'stoyle`Kikoo`({edges: [ {} ] })' },
-      { code: 'stoyle`Kikoo ${name}`({ edges: [ {}, {} ] })' },
+      'stoyle`Kikoo`({})',
+      'stoyle`Kikoo`({edges: [ {} ] })',
+      'stoyle`Kikoo ${name}`({ edges: [ {}, {} ] })',
     ],
     invalid: [
       {
@@ -19,4 +20,3 @@ export default function (parsingOptions) {
       },
     ],
   });
-};

@@ -4,7 +4,7 @@
   "description": "An ESLINT plugin to validate that stoyle is used correctly and avoid runtime surprises",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/testAll.mjs"
+    "test": "mocha \"tests/*.mjs\""
   },
   "repository": {
     "type": "git",
@@ -23,10 +23,10 @@
     "url": "https://github.com/quilicicf/Stoyle/issues"
   },
   "homepage": "https://github.com/quilicicf/Stoyle#readme",
-  "dependencies": {
-    "acorn": "8.8.1"
-  },
   "peerDependencies": {
     "eslint": "8.28.0"
+  },
+  "devDependencies": {
+    "mocha": "10.1.0"
   }
 }
