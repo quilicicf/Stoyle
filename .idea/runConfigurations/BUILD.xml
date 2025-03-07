@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BUILD" type="DenoConfigurationType" exePath="$USER_HOME$/.asdf/shims/deno" inputPath="$PROJECT_DIR$/scripts/build.ts" programParameters="run --allow-all">
+    <option name="applicationArguments" value=".asdf/shims/tsc" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

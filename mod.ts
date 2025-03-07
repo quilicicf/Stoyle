@@ -99,13 +99,13 @@ export class RgbCode {
 }
 
 export class ForegroundRgbCode extends RgbCode {
-  toString () {
+  override toString () {
     return `38;2;${this.red};${this.green};${this.blue}`;
   }
 }
 
 export class BackgroundRgbCode extends RgbCode {
-  toString () {
+  override toString () {
     return `48;2;${this.red};${this.green};${this.blue}`;
   }
 }

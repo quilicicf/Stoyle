@@ -3,13 +3,6 @@
   "version": "1.0.0",
   "description": "Stoyle for NodeJS",
   "license": "Apache-2.0",
-  "scripts": {
-    "test": "deno test test/",
-    "write-doc": "node npm-scripts/writeDocumentation.js",
-    "build": "npm run build-code && npm run build-types",
-    "build-code": "spack --config \"$(pwd)/spack.config.cjs\"",
-    "build-types": "tsc --emitDeclarationOnly --declaration --outDir dist --lib esnext mod.ts"
-  },
   "type": "module",
   "main": "dist/mod.js",
   "types": "dist/mod.d.ts",
@@ -19,12 +12,5 @@
   },
   "files": [
     "dist/*"
-  ],
-  "devDependencies": {
-    "@swc/cli": "0.1.55",
-    "@swc/core": "1.2.135",
-    "filesize.js": "2.0.0",
-    "node-gzip": "1.1.2",
-    "typescript": "4.5.5"
-  }
+  ]
 }

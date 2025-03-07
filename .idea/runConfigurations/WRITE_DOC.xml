@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="WRITE_DOC" type="DenoConfigurationType" exePath="$USER_HOME$/.asdf/shims/deno" inputPath="$PROJECT_DIR$/scripts/writeDocumentation.ts" programParameters="run --allow-env --allow-read --allow-run --allow-write=./">
+    <option name="envs">
+      <entry key="DENO_TRACE_PERMISSIONS" value="1" />
+    </option>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

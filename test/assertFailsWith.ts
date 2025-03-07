@@ -5,6 +5,6 @@ export function assertFailsWith (command: () => any, tryMessage: string, catchMe
     command();
     fail(tryMessage);
   } catch (error) {
-    assertEquals(error.message, catchMessage);
+    assertEquals((error as Error).message, catchMessage);
   }
 }

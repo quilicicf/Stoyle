@@ -1,6 +1,10 @@
+<!-- Formatted by https://github.com/quilicicf/markdown-formatter -->
+
 # Stoyle
 
-ANSI styling for Deno/NodeJS
+> ANSI styling for Deno/NodeJS
+
+![A classy british bull working on a painting that represents colorized code](./docs/stoyle.webp)
 
 <!-- TOC START -->
 
@@ -122,19 +126,17 @@ I wrote this lib to help me write CLI tools with a theme that would be:
 
 The goal is to follow the philosophy below:
 
-* IDE-integrated: uses real template literals!
-* simple: straight-forward API, I don't handle the parsing!
-* maintainable: the whole algorithm is under a 100 lines long, and annotated
-* efficient: the algorithm uses the smallest possible amount of ANSI codes
-* fail fast and hard: the lib throws ASAP if it finds an error
-* small:
+* __IDE-integrated__: uses real template literals!
+* __Simple__: straight-forward API, I don't handle the parsing!
+* __Maintainable__: the whole algorithm is under a 100 lines long, and annotated
+* __Efficient__: the algorithm uses the smallest possible amount of ANSI codes
+* __Fail fast and hard__: the lib throws ASAP if it finds an error
+* __Small__:
 
-  > Although `deno bundle` currently inflates the bundle quite much
-
-  | Module           | Raw size                                      | Gzipped size                                       | Bundled size                                      |
-  | ---------------- | --------------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
-  | mod.ts           | <!-- 🔁: modRawSize -->`8.5 Kb`<!-- 🔁 -->    | <!-- 🔁: modGzippedSize -->`2.4 Kb`<!-- 🔁 -->     | <!-- 🔁: modBundledSize -->`11.7 Kb`<!-- 🔁 -->   |
-  | validateTheme.ts | <!-- 🔁: themerRawSize -->`2.8 Kb`<!-- 🔁 --> | <!-- 🔁: themerGzippedSize -->`820.0 b`<!-- 🔁 --> | <!-- 🔁: themerBundledSize -->`8.1 Kb`<!-- 🔁 --> |
+  | Module           | Raw size                                     | Gzipped size                                      | Bundled size                                     | Bundled + gzipped size                                     |
+  | ---------------- | -------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+  | mod.ts           | <!-- 🔁: modRawSize -->`8.5 Kb`<!-- 🔁 -->   | <!-- 🔁: modGzippedSize -->`2.3 Kb`<!-- 🔁 -->    | <!-- 🔁: modBundledSize -->`5.0 Kb`<!-- 🔁 -->  | <!-- 🔁: modBundledAndGzippedSize -->`1.7 Kb`<!-- 🔁 -->   |
+  | validateTheme.ts | <!-- 🔁: themeRawSize -->`2.8 Kb`<!-- 🔁 --> | <!-- 🔁: themeGzippedSize -->`786.0 b`<!-- 🔁 --> | <!-- 🔁: themeBundledSize -->`3.4 Kb`<!-- 🔁 --> | <!-- 🔁: themeBundledAndGzippedSize -->`1.1 Kb`<!-- 🔁 --> |
 
 My regrets:
 
